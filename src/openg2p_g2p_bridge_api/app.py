@@ -8,14 +8,15 @@ _config = Settings.get_config()
 from openg2p_fastapi_common.app import Initializer as BaseInitializer
 
 from .controllers import (
-    DisbursementEnvelopeController,
     DisbursementController,
+    DisbursementEnvelopeController,
 )
 from .models import DisbursementEnvelope, DisbursementEnvelopeBatchStatus
 from .services import (
     DisbursementEnvelopeService,
     DisbursementService,
 )
+
 
 class Initializer(BaseInitializer):
     def initialize(self, **kwargs):
@@ -33,6 +34,5 @@ class Initializer(BaseInitializer):
             print("Migrating database")
             await DisbursementEnvelope.create_migrate()
             await DisbursementEnvelopeBatchStatus.create_migrate()
-
 
         asyncio.run(migrate())

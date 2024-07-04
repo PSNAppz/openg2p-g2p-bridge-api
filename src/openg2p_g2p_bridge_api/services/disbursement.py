@@ -14,9 +14,9 @@ from ..errors import (
 )
 from ..models import (
     CancellationStatus,
-    DisbursementCancellationStatus,
     Disbursement,
     DisbursementBatchStatus,
+    DisbursementCancellationStatus,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
 )
@@ -177,9 +177,8 @@ class DisbursementService(BaseService):
     ):
         disbursement_envelope_id = disbursement_payloads[0].disbursement_envelope_id
         if not all(
-            disbursement_payload.disbursement_envelope_id
-                == disbursement_envelope_id
-                for disbursement_payload in disbursement_payloads
+            disbursement_payload.disbursement_envelope_id == disbursement_envelope_id
+            for disbursement_payload in disbursement_payloads
         ):
             raise DisbursementException(
                 G2PBridgeErrorCodes.MULTIPLE_ENVELOPES_FOUND,
@@ -284,11 +283,8 @@ class DisbursementService(BaseService):
     ) -> List[DisbursementPayload]:
         session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
         async with session_maker() as session:
-
-            is_payload_valid = (
-                await self.validate_request_payload(
-                    disbursement_payloads=disbursement_request.request_payload
-                )
+            is_payload_valid = await self.validate_request_payload(
+                disbursement_payloads=disbursement_request.request_payload
             )
 
             if not is_payload_valid:
@@ -297,9 +293,9 @@ class DisbursementService(BaseService):
                     disbursement_payloads=disbursement_request.request_payload,
                 )
 
-            disbursements_in_db: List[Disbursement] = await self.fetch_disbursements_from_db(
-                disbursement_request, session
-            )
+            disbursements_in_db: List[
+                Disbursement
+            ] = await self.fetch_disbursements_from_db(disbursement_request, session)
             if not disbursements_in_db:
                 raise DisbursementException(
                     code=G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
@@ -334,7 +330,9 @@ class DisbursementService(BaseService):
                 )
 
             for disbursement in disbursements_in_db:
-                disbursement.cancellation_status = DisbursementCancellationStatus.CANCELLED
+                disbursement.cancellation_status = (
+                    DisbursementCancellationStatus.CANCELLED
+                )
                 disbursement.cancellation_time_stamp = datetime.now()
 
             disbursement_envelope_batch_status = (
@@ -368,11 +366,13 @@ class DisbursementService(BaseService):
 
             return disbursement_request.request_payload
 
-
-    async def check_for_single_envelope(self, disbursements_in_db, disbursement_payloads):
-        disbursement_envelope_ids = set(
-            [disbursement.disbursement_envelope_id for disbursement in disbursements_in_db]
-        )
+    async def check_for_single_envelope(
+        self, disbursements_in_db, disbursement_payloads
+    ):
+        disbursement_envelope_ids = {
+            disbursement.disbursement_envelope_id
+            for disbursement in disbursements_in_db
+        }
         if len(disbursement_envelope_ids) > 1:
             raise DisbursementException(
                 G2PBridgeErrorCodes.MULTIPLE_ENVELOPES_FOUND,
@@ -395,7 +395,8 @@ class DisbursementService(BaseService):
             if disbursement_payload.disbursement_id in [
                 disbursement.disbursement_id
                 for disbursement in disbursements_in_db
-                if disbursement.cancellation_status == DisbursementCancellationStatus.CANCELLED
+                if disbursement.cancellation_status
+                == DisbursementCancellationStatus.CANCELLED
             ]:
                 invalid_disbursements_exist = True
                 disbursement_payload.response_error_codes.append(
@@ -403,7 +404,9 @@ class DisbursementService(BaseService):
                 )
         return invalid_disbursements_exist
 
-    async def fetch_disbursements_from_db(self, disbursement_request, session) -> List[Disbursement]:
+    async def fetch_disbursements_from_db(
+        self, disbursement_request, session
+    ) -> List[Disbursement]:
         disbursements_in_db = (
             (
                 await session.execute(
@@ -423,7 +426,10 @@ class DisbursementService(BaseService):
         return disbursements_in_db
 
     async def validate_envelope_for_disbursement_cancellation(
-        self, disbursements_in_db, disbursement_payloads: List[DisbursementPayload], session
+        self,
+        disbursements_in_db,
+        disbursement_payloads: List[DisbursementPayload],
+        session,
     ):
         disbursement_envelope = (
             (
@@ -503,7 +509,10 @@ class DisbursementService(BaseService):
 
         for disbursement_payload in disbursement_payloads:
             disbursement_payload.response_error_codes = []
-            if disbursement_payload.disbursement_id is None or disbursement_payload.disbursement_id == "":
+            if (
+                disbursement_payload.disbursement_id is None
+                or disbursement_payload.disbursement_id == ""
+            ):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID
                 )

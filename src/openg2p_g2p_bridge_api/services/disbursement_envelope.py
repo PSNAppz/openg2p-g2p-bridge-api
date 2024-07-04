@@ -35,9 +35,6 @@ class DisbursementEnvelopeService(BaseService):
             except DisbursementEnvelopeException as e:
                 raise e
 
-            # -----------------------------
-            # First construct Persistence Models - DisbursementEnvelope and DisbursementEnvelopeBatchStatus
-            # -----------------------------
             disbursement_envelope: DisbursementEnvelope = await self.construct_disbursement_envelope(
                 disbursement_envelope_payload=disbursement_envelope_request.request_payload
             )
