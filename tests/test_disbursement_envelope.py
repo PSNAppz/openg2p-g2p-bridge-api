@@ -15,11 +15,10 @@ from openg2p_g2p_bridge_api.schemas import (
 )
 
 
-def mock_create_disbursement_envelope(is_valid):
+def mock_create_disbursement_envelope(is_valid, error_code=None):
     if not is_valid:
         raise DisbursementEnvelopeException(
-            code=G2PBridgeErrorCodes.INVALID_PROGRAM_MNEMONIC,
-            message="Invalid program mnemonic provided.",
+            code=error_code, message=f"{error_code} error."
         )
     return DisbursementEnvelopePayload(
         disbursement_envelope_id="env123",
@@ -71,11 +70,13 @@ async def test_create_disbursement_envelope_success(mock_service_get_component):
 
 @pytest.mark.asyncio
 @patch("openg2p_g2p_bridge_api.services.DisbursementEnvelopeService.get_component")
-async def test_create_disbursement_envelope_failure(mock_service_get_component):
+@pytest.mark.parametrize("error_code", list(G2PBridgeErrorCodes))
+async def test_create_disbursement_envelope_errors(
+    mock_service_get_component, error_code
+):
     mock_service_instance = AsyncMock()
-
     mock_service_instance.create_disbursement_envelope.side_effect = (
-        lambda request: mock_create_disbursement_envelope(False)
+        lambda request: mock_create_disbursement_envelope(False, error_code)
     )
     mock_service_instance.construct_disbursement_envelope_error_response = AsyncMock()
 
@@ -83,7 +84,7 @@ async def test_create_disbursement_envelope_failure(mock_service_get_component):
 
     error_response = DisbursementEnvelopeResponse(
         response_status=ResponseStatus.FAILURE,
-        response_error_code=G2PBridgeErrorCodes.INVALID_PROGRAM_MNEMONIC,
+        response_error_code=error_code,
     )
 
     mock_service_instance.construct_disbursement_envelope_error_response.return_value = (
@@ -94,7 +95,7 @@ async def test_create_disbursement_envelope_failure(mock_service_get_component):
 
     request_payload = DisbursementEnvelopeRequest(
         request_payload=DisbursementEnvelopePayload(
-            benefit_program_mnemonic="",  # This should trigger the error
+            benefit_program_mnemonic="",  # Trigger the error
             disbursement_frequency="Monthly",
             cycle_code_mnemonic="CYCLE42",
             number_of_beneficiaries=100,
@@ -108,4 +109,4 @@ async def test_create_disbursement_envelope_failure(mock_service_get_component):
 
     assert (
         actual_response == error_response
-    ), "The response did not match the expected error response."
+    ), f"The response did not match the expected error response for {error_code}."
