@@ -14,6 +14,7 @@ from ..errors import (
 )
 from ..models import (
     CancellationStatus,
+    DisbursementCancellationStatus,
     Disbursement,
     DisbursementBatchStatus,
     DisbursementEnvelope,
@@ -333,7 +334,7 @@ class DisbursementService(BaseService):
                 )
 
             for disbursement in disbursements_in_db:
-                disbursement.cancellation_status = CancellationStatus.Canceled
+                disbursement.cancellation_status = DisbursementCancellationStatus.CANCELLED
                 disbursement.cancellation_time_stamp = datetime.now()
 
             disbursement_envelope_batch_status = (
@@ -384,17 +385,17 @@ class DisbursementService(BaseService):
     ) -> bool:
         invalid_disbursements_exist = False
         for disbursement_payload in disbursement_request.request_payload:
-            if disbursement_payload.id not in [
-                disbursement.id for disbursement in disbursements_in_db
+            if disbursement_payload.disbursement_id not in [
+                disbursement.disbursement_id for disbursement in disbursements_in_db
             ]:
                 invalid_disbursements_exist = True
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID.value
                 )
-            if disbursement_payload.id in [
-                disbursement.id
+            if disbursement_payload.disbursement_id in [
+                disbursement.disbursement_id
                 for disbursement in disbursements_in_db
-                if disbursement.cancellation_status == CancellationStatus.Canceled
+                if disbursement.cancellation_status == DisbursementCancellationStatus.CANCELLED
             ]:
                 invalid_disbursements_exist = True
                 disbursement_payload.response_error_codes.append(
