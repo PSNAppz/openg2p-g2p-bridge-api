@@ -13,6 +13,6 @@ class RequestPagination(BaseModel):
 
 
 class BridgeRequest(BaseModel):
-    request_header: RequestHeader
-    request_pagination: RequestPagination
+    request_header: Optional[RequestHeader] = None
+    request_pagination: Optional[RequestPagination] = None
     request_payload: object
