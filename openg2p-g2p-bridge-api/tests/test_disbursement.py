@@ -3,12 +3,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from openg2p_g2p_bridge_api.controllers import DisbursementController
-from openg2p_g2p_bridge_api.errors import (
-    DisbursementException,
-    G2PBridgeErrorCodes,
-)
-from openg2p_g2p_bridge_api.models import CancellationStatus
-from openg2p_g2p_bridge_api.schemas import (
+from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementException
+from openg2p_g2p_bridge_models.models import CancellationStatus
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementPayload,
     DisbursementRequest,
     DisbursementResponse,
@@ -32,7 +30,7 @@ async def test_create_disbursements_success(mock_service_get_component):
     disbursement_payloads = [
         DisbursementPayload(
             disbursement_envelope_id="env123",
-            beneficiary_id=123,
+            beneficiary_id="123AB",
             disbursement_amount=1000,
         )
     ]
@@ -64,7 +62,7 @@ async def test_create_disbursements_failure(mock_service_get_component):
     disbursement_payloads = [
         DisbursementPayload(
             disbursement_envelope_id="env123",
-            beneficiary_id=123,
+            beneficiary_id="123AB",
             disbursement_amount=1000,
         )
     ]
@@ -99,7 +97,7 @@ def mock_cancel_disbursements(is_valid, disbursement_payloads):
             disbursement_payloads=disbursement_payloads,
         )
     for payload in disbursement_payloads:
-        payload.cancellation_status = CancellationStatus.Canceled
+        payload.cancellation_status = CancellationStatus.Cancelled
         payload.cancellation_time_stamp = datetime.datetime.utcnow()
     return disbursement_payloads
 
@@ -111,7 +109,7 @@ async def test_cancel_disbursements_success(mock_service_get_component):
     disbursement_payloads = [
         DisbursementPayload(
             disbursement_id="123",
-            beneficiary_id=123,
+            beneficiary_id="123AB",
             disbursement_amount=1000,
             cancellation_status=None,
         )
@@ -135,7 +133,7 @@ async def test_cancel_disbursements_success(mock_service_get_component):
 
     assert response.response_status == ResponseStatus.SUCCESS
     assert all(
-        payload.cancellation_status == CancellationStatus.Canceled
+        payload.cancellation_status == CancellationStatus.Cancelled
         for payload in response.response_payload
     )
 
@@ -147,7 +145,7 @@ async def test_cancel_disbursements_failure(mock_service_get_component):
     disbursement_payloads = [
         DisbursementPayload(
             disbursement_id="123",
-            beneficiary_id=123,
+            beneficiary_id="123AB",
             disbursement_amount=1000,
             cancellation_status=None,
         )

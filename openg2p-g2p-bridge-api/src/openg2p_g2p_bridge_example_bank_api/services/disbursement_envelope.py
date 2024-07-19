@@ -1,14 +1,12 @@
 import time
-import uuid
 from datetime import datetime
 
 from openg2p_fastapi_common.context import dbengine
 from openg2p_fastapi_common.service import BaseService
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.future import select
-
-from ..errors import DisbursementEnvelopeException, G2PBridgeErrorCodes
-from ..models import (
+from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementEnvelopeException
+from openg2p_g2p_bridge_models.models import (
+    BenefitProgramConfiguration,
     CancellationStatus,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
@@ -16,12 +14,14 @@ from ..models import (
     FundsAvailableWithBankEnum,
     FundsBlockedWithBankEnum,
 )
-from ..schemas import (
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementEnvelopePayload,
     DisbursementEnvelopeRequest,
     DisbursementEnvelopeResponse,
     ResponseStatus,
 )
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.future import select
 
 
 class DisbursementEnvelopeService(BaseService):
@@ -41,7 +41,7 @@ class DisbursementEnvelopeService(BaseService):
 
             disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = (
                 await self.construct_disbursement_envelope_batch_status(
-                    disbursement_envelope
+                    disbursement_envelope, session
                 )
             )
 
@@ -87,14 +87,14 @@ class DisbursementEnvelopeService(BaseService):
 
             if (
                 disbursement_envelope.cancellation_status
-                == CancellationStatus.Canceled.value
+                == CancellationStatus.Cancelled.value
             ):
                 raise DisbursementEnvelopeException(
                     G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED
                 )
 
             disbursement_envelope.cancellation_status = (
-                CancellationStatus.Canceled.value
+                CancellationStatus.Cancelled.value
             )
             disbursement_envelope.cancellation_timestamp = datetime.utcnow()
 
@@ -190,7 +190,6 @@ class DisbursementEnvelopeService(BaseService):
         self, disbursement_envelope_payload: DisbursementEnvelopePayload
     ) -> DisbursementEnvelope:
         disbursement_envelope: DisbursementEnvelope = DisbursementEnvelope(
-            id=uuid.uuid4(),
             disbursement_envelope_id=str(int(time.time() * 1000)),
             benefit_program_mnemonic=disbursement_envelope_payload.benefit_program_mnemonic,
             disbursement_frequency=disbursement_envelope_payload.disbursement_frequency.value,
@@ -200,7 +199,7 @@ class DisbursementEnvelopeService(BaseService):
             total_disbursement_amount=disbursement_envelope_payload.total_disbursement_amount,
             disbursement_schedule_date=disbursement_envelope_payload.disbursement_schedule_date,
             receipt_time_stamp=datetime.utcnow(),
-            cancellation_status=CancellationStatus.Not_Canceled.value,
+            cancellation_status=CancellationStatus.Not_Cancelled.value,
             active=True,
         )
         disbursement_envelope_payload.id = disbursement_envelope.id
@@ -211,10 +210,21 @@ class DisbursementEnvelopeService(BaseService):
 
     # noinspection PyMethodMayBeStatic
     async def construct_disbursement_envelope_batch_status(
-        self, disbursement_envelope: DisbursementEnvelope
+        self, disbursement_envelope: DisbursementEnvelope, session
     ) -> DisbursementEnvelopeBatchStatus:
+        benefit_program_configuration: BenefitProgramConfiguration = (
+            (
+                await session.execute(
+                    select(BenefitProgramConfiguration).where(
+                        BenefitProgramConfiguration.benefit_program_mnemonic
+                        == disbursement_envelope.benefit_program_mnemonic
+                    )
+                )
+            )
+            .scalars()
+            .first()
+        )
         disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = DisbursementEnvelopeBatchStatus(
-            id=disbursement_envelope.id,
             disbursement_envelope_id=disbursement_envelope.disbursement_envelope_id,
             number_of_disbursements_received=0,
             total_disbursement_amount_received=0,
@@ -227,5 +237,6 @@ class DisbursementEnvelopeService(BaseService):
             funds_blocked_retries=0,
             funds_blocked_latest_error_code="",
             active=True,
+            id_mapper_resolution_required=benefit_program_configuration.id_mapper_resolution_required,
         )
         return disbursement_envelope_batch_status

@@ -1,13 +1,13 @@
 from typing import List
 
 from openg2p_fastapi_common.controller import BaseController
-
-from ..errors import DisbursementException
-from ..schemas import (
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementException
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementPayload,
     DisbursementRequest,
     DisbursementResponse,
 )
+
 from ..services import DisbursementService
 
 

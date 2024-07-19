@@ -1,11 +1,11 @@
 from openg2p_fastapi_common.controller import BaseController
-
-from ..errors import DisbursementEnvelopeException
-from ..schemas import (
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementEnvelopeException
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementEnvelopePayload,
     DisbursementEnvelopeRequest,
     DisbursementEnvelopeResponse,
 )
+
 from ..services import DisbursementEnvelopeService
 
 

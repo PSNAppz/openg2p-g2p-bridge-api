@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 from datetime import datetime
@@ -5,27 +6,33 @@ from typing import List
 
 from openg2p_fastapi_common.context import dbengine
 from openg2p_fastapi_common.service import BaseService
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.future import select
-
-from ..errors import (
-    DisbursementException,
-    G2PBridgeErrorCodes,
-)
-from ..models import (
+from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementException
+from openg2p_g2p_bridge_models.models import (
+    BankDisbursementBatchStatus,
     CancellationStatus,
     Disbursement,
-    DisbursementBatchStatus,
+    DisbursementBatchControl,
     DisbursementCancellationStatus,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
+    ProcessStatus,
+    MapperResolutionBatchStatus,
+    ProcessStatus,
 )
-from ..schemas import (
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementPayload,
     DisbursementRequest,
     DisbursementResponse,
     ResponseStatus,
 )
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.future import select
+
+from ..config import Settings
+
+_config = Settings.get_config()
+_logger = logging.getLogger(_config.logging_default_logger_name)
 
 
 class DisbursementService(BaseService):
@@ -41,7 +48,6 @@ class DisbursementService(BaseService):
                 )
             except DisbursementException as e:
                 raise e
-
             is_error_free = await self.validate_disbursement_request(
                 disbursement_payloads=disbursement_request.request_payload
             )
@@ -51,32 +57,59 @@ class DisbursementService(BaseService):
                     code=G2PBridgeErrorCodes.INVALID_DISBURSEMENT_PAYLOAD,
                     disbursement_payloads=disbursement_request.request_payload,
                 )
-
             disbursements: List[Disbursement] = await self.construct_disbursements(
                 disbursement_payloads=disbursement_request.request_payload
             )
-            disbursement_batch_statuses: List[
-                DisbursementBatchStatus
-            ] = await self.construct_disbursement_batch_statuses(
+            disbursement_batch_controls: List[
+                DisbursementBatchControl
+            ] = await self.construct_disbursement_batch_controls(
                 disbursements=disbursements
             )
 
             disbursement_envelope_batch_status = (
                 await self.update_disbursement_envelope_batch_status(
-                    disbursement_request, disbursements, session
+                    disbursements, session
+                )
+            )
+            session.add_all(disbursements)
+            session.add_all(disbursement_batch_controls)
+            session.add(disbursement_envelope_batch_status)
+
+            if disbursement_envelope_batch_status.id_mapper_resolution_required:
+                mapper_resolution_batch_status: MapperResolutionBatchStatus = (
+                    MapperResolutionBatchStatus(
+                        mapper_resolution_batch_id=disbursement_batch_controls[
+                            0
+                        ].mapper_resolution_batch_id,
+                        resolution_status=ProcessStatus.PENDING,
+                        latest_error_code="",
+                        active=True,
+                    )
+                )
+                session.add(mapper_resolution_batch_status)
+                _logger.info("ID Mapper Resolution Batch Status Created!")
+
+            bank_disbursement_batch_status: BankDisbursementBatchStatus = (
+                BankDisbursementBatchStatus(
+                    bank_disbursement_batch_id=disbursement_batch_controls[
+                        0
+                    ].bank_disbursement_batch_id,
+                    disbursement_envelope_id=disbursement_batch_controls[
+                        0
+                    ].disbursement_envelope_id,
+                    disbursement_status=ProcessStatus.PENDING,
+                    latest_error_code="",
+                    disbursement_attempts=0,
+                    active=True,
                 )
             )
 
-            session.add_all(disbursements)
-            session.add_all(disbursement_batch_statuses)
-            session.add(disbursement_envelope_batch_status)
+            session.add(bank_disbursement_batch_status)
             await session.commit()
 
             return disbursement_request.request_payload
 
-    async def update_disbursement_envelope_batch_status(
-        self, disbursement_request, disbursements, session
-    ):
+    async def update_disbursement_envelope_batch_status(self, disbursements, session):
         disbursement_envelope_batch_status = (
             (
                 await session.execute(
@@ -103,7 +136,6 @@ class DisbursementService(BaseService):
         disbursements: List[Disbursement] = []
         for disbursement_payload in disbursement_payloads:
             disbursement = Disbursement(
-                id=uuid.uuid4(),
                 disbursement_id=str(int(time.time() * 1000)),
                 disbursement_envelope_id=str(
                     disbursement_payload.disbursement_envelope_id
@@ -119,19 +151,23 @@ class DisbursementService(BaseService):
             disbursements.append(disbursement)
         return disbursements
 
-    async def construct_disbursement_batch_statuses(
+    async def construct_disbursement_batch_controls(
         self, disbursements: List[Disbursement]
     ):
-        disbursement_batch_statuses = []
+        disbursement_batch_controls = []
+        mapper_resolution_batch_id = str(uuid.uuid4())
+        bank_disbursement_batch_id = str(uuid.uuid4())
         for disbursement in disbursements:
-            disbursement_batch_status = DisbursementBatchStatus(
-                id=disbursement.id,
+            disbursement_batch_control = DisbursementBatchControl(
                 disbursement_id=disbursement.disbursement_id,
                 disbursement_envelope_id=str(disbursement.disbursement_envelope_id),
+                beneficiary_id=disbursement.beneficiary_id,
+                bank_disbursement_batch_id=bank_disbursement_batch_id,
+                mapper_resolution_batch_id=mapper_resolution_batch_id,
                 active=True,
             )
-            disbursement_batch_statuses.append(disbursement_batch_status)
-        return disbursement_batch_statuses
+            disbursement_batch_controls.append(disbursement_batch_control)
+        return disbursement_batch_controls
 
     async def validate_disbursement_request(
         self, disbursement_payloads: List[DisbursementPayload]
@@ -202,7 +238,7 @@ class DisbursementService(BaseService):
                 disbursement_payloads,
             )
 
-        if disbursement_envelope.cancellation_status == CancellationStatus.Canceled:
+        if disbursement_envelope.cancellation_status == CancellationStatus.Cancelled:
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED,
                 disbursement_payloads,
@@ -449,7 +485,7 @@ class DisbursementService(BaseService):
                 disbursement_payloads,
             )
 
-        if disbursement_envelope.cancellation_status == CancellationStatus.Canceled:
+        if disbursement_envelope.cancellation_status == CancellationStatus.Cancelled:
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED,
                 disbursement_payloads,

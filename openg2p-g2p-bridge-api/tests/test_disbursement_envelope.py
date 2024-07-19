@@ -3,11 +3,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from openg2p_g2p_bridge_api.controllers import DisbursementEnvelopeController
-from openg2p_g2p_bridge_api.errors import (
-    DisbursementEnvelopeException,
-    G2PBridgeErrorCodes,
-)
-from openg2p_g2p_bridge_api.schemas import (
+from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
+from openg2p_g2p_bridge_models.errors.exceptions import DisbursementEnvelopeException
+from openg2p_g2p_bridge_models.schemas import (
     DisbursementEnvelopePayload,
     DisbursementEnvelopeRequest,
     DisbursementEnvelopeResponse,
