@@ -51,8 +51,12 @@ class DisbursementBatchControl(BaseORMModelWithTimes):
     disbursement_id: Mapped[str] = mapped_column(String, unique=True)
     disbursement_envelope_id: Mapped[str] = mapped_column(String, index=True)
     beneficiary_id: Mapped[str] = mapped_column(String)
-    bank_disbursement_batch_id = mapped_column(UUID, nullable=True, default=None, index=True, unique=True)
-    mapper_resolution_batch_id = mapped_column(UUID, nullable=True, default=None, index=True, unique=True)
+    bank_disbursement_batch_id = mapped_column(
+        UUID, nullable=True, default=None, index=True, unique=True
+    )
+    mapper_resolution_batch_id = mapped_column(
+        UUID, nullable=True, default=None, index=True, unique=True
+    )
 
 
 class MapperResolutionBatchStatus(BaseORMModelWithTimes):

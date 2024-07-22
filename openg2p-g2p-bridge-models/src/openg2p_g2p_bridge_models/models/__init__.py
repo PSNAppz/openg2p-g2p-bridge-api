@@ -4,7 +4,6 @@ from .disbursement import (
     Disbursement,
     DisbursementBatchControl,
     DisbursementCancellationStatus,
-    ProcessStatus,
     MapperResolutionBatchStatus,
     MapperResolutionDetails,
     MapperResolvedFaType,
