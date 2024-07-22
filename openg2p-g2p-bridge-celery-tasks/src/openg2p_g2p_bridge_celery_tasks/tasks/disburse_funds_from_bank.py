@@ -3,9 +3,9 @@ from datetime import datetime
 
 from openg2p_g2p_bridge_bank_connectors.bank_connectors import BankConnectorFactory
 from openg2p_g2p_bridge_bank_connectors.bank_interface.bank_connector_interface import (
+    BankConnectorInterface,
     PaymentPayload,
     PaymentStatus,
-    BankConnectorInterface
 )
 from openg2p_g2p_bridge_models.models import (
     BankDisbursementBatchStatus,
@@ -15,14 +15,14 @@ from openg2p_g2p_bridge_models.models import (
     DisbursementBatchControl,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
-    ProcessStatus,
     FundsBlockedWithBankEnum,
     MapperResolutionDetails,
+    ProcessStatus,
 )
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.orm import sessionmaker
 
-from ..app import get_engine, celery_app
+from ..app import celery_app, get_engine
 from ..config import Settings
 
 _config = Settings.get_config()
@@ -168,25 +168,41 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     remitting_account_currency=benefit_program_configuration.sponsor_bank_account_currency,
                     payment_amount=disbursement.disbursement_amount,
                     funds_blocked_reference_number=envelope_batch_status.funds_blocked_reference_number,
-                    beneficiary_account=mapper_details.bank_account_number if mapper_details else None,
+                    beneficiary_account=mapper_details.bank_account_number
+                    if mapper_details
+                    else None,
                     beneficiary_account_currency=benefit_program_configuration.sponsor_bank_account_currency,
-                    beneficiary_bank_code=mapper_details.bank_code if mapper_details else None,
-                    beneficiary_branch_code=mapper_details.branch_code if mapper_details else None,
+                    beneficiary_bank_code=mapper_details.bank_code
+                    if mapper_details
+                    else None,
+                    beneficiary_branch_code=mapper_details.branch_code
+                    if mapper_details
+                    else None,
                     payment_date=datetime.utcnow(),
                     beneficiary_id=disbursement.beneficiary_id,
                     beneficiary_name=disbursement.beneficiary_name,
                     beneficiary_account_type=mapper_details.mapper_resolved_fa_type,
-                    beneficiary_phone_no=mapper_details.mobile_number if mapper_details else None,
-                    beneficiary_mobile_wallet_provider=mapper_details.mobile_wallet_provider if mapper_details else None,
-                    beneficiary_email_wallet_provider=mapper_details.email_wallet_provider if mapper_details else None,
-                    beneficiary_email=mapper_details.email_address if mapper_details else None,
+                    beneficiary_phone_no=mapper_details.mobile_number
+                    if mapper_details
+                    else None,
+                    beneficiary_mobile_wallet_provider=mapper_details.mobile_wallet_provider
+                    if mapper_details
+                    else None,
+                    beneficiary_email_wallet_provider=mapper_details.email_wallet_provider
+                    if mapper_details
+                    else None,
+                    beneficiary_email=mapper_details.email_address
+                    if mapper_details
+                    else None,
                     benefit_program_mnemonic=envelope.benefit_program_mnemonic,
                     cycle_code_mnemonic=envelope.cycle_code_mnemonic,
                 )
             )
 
-        bank_connector: BankConnectorInterface = BankConnectorFactory.get_component().get_bank_connector(
-            benefit_program_configuration.sponsor_bank_code
+        bank_connector: BankConnectorInterface = (
+            BankConnectorFactory.get_component().get_bank_connector(
+                benefit_program_configuration.sponsor_bank_code
+            )
         )
 
         try:

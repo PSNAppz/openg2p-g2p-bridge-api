@@ -10,10 +10,10 @@ from openg2p_g2p_bridge_models.models import (
 )
 from openg2p_g2pconnect_mapper_lib.client import MapperResolveClient
 from openg2p_g2pconnect_mapper_lib.schemas import ResolveRequest
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.orm import sessionmaker
 
-from ..app import get_engine, celery_app
+from ..app import celery_app, get_engine
 from ..config import Settings
 from ..helpers import ResolveHelper
 
@@ -98,7 +98,6 @@ def mapper_resolution_worker(mapper_resolution_batch_id: str):
 
 
 async def make_resolve_request(disbursement_batch_controls):
-
     resolve_helper = ResolveHelper.get_component()
 
     single_resolve_requests = [
@@ -131,9 +130,7 @@ def process_and_store_resolution(
             if disbursement_id and (
                 single_response.fa != "" or single_response.fa is not None
             ):
-                deconstructed_fa = (
-                    resolve_helper.deconstruct_fa(single_response.fa)
-                )
+                deconstructed_fa = resolve_helper.deconstruct_fa(single_response.fa)
                 details = MapperResolutionDetails(
                     mapper_resolution_batch_id=mapper_resolution_batch_id,
                     disbursement_id=disbursement_id,

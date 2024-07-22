@@ -16,7 +16,6 @@ from openg2p_g2p_bridge_models.models import (
     DisbursementCancellationStatus,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
-    ProcessStatus,
     MapperResolutionBatchStatus,
     ProcessStatus,
 )

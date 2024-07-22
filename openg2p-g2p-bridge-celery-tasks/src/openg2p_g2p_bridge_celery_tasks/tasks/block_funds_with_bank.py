@@ -17,7 +17,7 @@ from openg2p_g2p_bridge_models.models import (
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import sessionmaker
 
-from ..app import get_engine, celery_app
+from ..app import celery_app, get_engine
 from ..config import Settings
 
 _config = Settings.get_config()

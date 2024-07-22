@@ -18,6 +18,7 @@ from ..bank_interface.bank_connector_interface import (
 class ExampleBankConnector(BankConnectorInterface):
     def check_funds(self, account_no, currency, amount) -> CheckFundsResponse:
         print("EXAMPLE BANK CONNECTOR: Checking funds")
+
         return CheckFundsResponse(
             status=FundsAvailableWithBankEnum.FUNDS_AVAILABLE, error_code=""
         )
