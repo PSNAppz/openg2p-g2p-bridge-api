@@ -55,7 +55,6 @@ class PaymentStatus(enum.Enum):
 class PaymentResponse(BaseModel):
     status: PaymentStatus
     error_code: str
-    ack_reference_no: str
 
 
 class BankConnectorInterface(BaseService):
