@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from openg2p_fastapi_common.context import dbengine
 from openg2p_fastapi_common.controller import BaseController
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -30,18 +29,27 @@ class FundAvailabilityController(BaseController):
                 Account.account_number == request.account_number
             )
             result = await session.execute(stmt)
-            account_balance = result.scalars().first()
+            account = result.scalars().first()
 
-            if not account_balance:
-                raise HTTPException(status_code=404, detail="Account not found")
-
-            if account_balance.book_balance >= request.total_funds_needed:
+            if not account:
                 return CheckFundResponse(
-                    account_number=account_balance.account_number,
+                    status="failed",
+                    account_number=request.account_number,
+                    has_sufficient_funds=False,
+                    error_message="Account not found",
+                )
+
+            if account.available_balance >= request.total_funds_needed:
+                return CheckFundResponse(
+                    status="success",
+                    account_number=account.account_number,
                     has_sufficient_funds=True,
+                    error_message="",
                 )
             else:
                 return CheckFundResponse(
-                    account_number=account_balance.account_number,
+                    status="failed",
+                    account_number=account.account_number,
                     has_sufficient_funds=False,
+                    error_message="Insufficient funds",
                 )

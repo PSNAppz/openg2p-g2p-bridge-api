@@ -7,13 +7,14 @@ from .config import Settings
 _config = Settings.get_config()
 
 from openg2p_fastapi_common.app import Initializer as BaseInitializer
+from sqlalchemy import create_engine
 
 from .controllers import (
     BlockFundsController,
     FundAvailabilityController,
     PaymentController,
 )
-from .models import Account, BenefitProgram, FundBlock, InitiatePaymentRequest
+from .models import Account, FundBlock, InitiatePaymentRequest
 
 _logger = logging.getLogger(_config.logging_default_logger_name)
 
@@ -31,9 +32,14 @@ class Initializer(BaseInitializer):
 
         async def migrate():
             _logger.info("Migrating database")
-            await BenefitProgram.create_migrate()
             await Account.create_migrate()
             await FundBlock.create_migrate()
             await InitiatePaymentRequest.create_migrate()
 
         asyncio.run(migrate())
+
+
+def get_engine():
+    if _config.db_datasource:
+        db_engine = create_engine(_config.db_datasource)
+        return db_engine
