@@ -28,6 +28,7 @@ class FAKeys(enum.Enum):
     mobile_wallet_provider = "mobile_wallet_provider"
     email_address = "email_address"
     email_wallet_provider = "email_wallet_provider"
+    fa_type = "fa_type"
 
 
 class KeyValuePair(BaseModel):
@@ -85,15 +86,16 @@ class ResolveHelper(BaseService):
         deconstruct_strategy = self.get_deconstruct_strategy(fa)
         if deconstruct_strategy:
             deconstructed_pairs = self._deconstruct(fa, deconstruct_strategy)
-            deconstructed_fa = {pair.key: pair.value for pair in deconstructed_pairs}
+            deconstructed_fa = {pair.key.value: pair.value for pair in deconstructed_pairs}
             return deconstructed_fa
         return {}
 
+    # TODO: Update this method to return the correct deconstruct strategy based on the FA type KEY Val pair
     def get_deconstruct_strategy(self, fa: str) -> str:
-        if fa.startswith(MapperResolvedFaType.BANK_ACCOUNT.value):
+        if fa.endswith(MapperResolvedFaType.BANK_ACCOUNT.value):
             return _config.bank_fa_deconstruct_strategy
-        elif fa.startswith(MapperResolvedFaType.MOBILE_WALLET.value):
+        elif fa.endswith(MapperResolvedFaType.MOBILE_WALLET.value):
             return _config.mobile_wallet_fa_deconstruct_strategy
-        elif fa.startswith(MapperResolvedFaType.EMAIL_WALLET.value):
+        elif fa.endswith(MapperResolvedFaType.EMAIL_WALLET.value):
             return _config.email_wallet_fa_deconstruct_strategy
         return ""
