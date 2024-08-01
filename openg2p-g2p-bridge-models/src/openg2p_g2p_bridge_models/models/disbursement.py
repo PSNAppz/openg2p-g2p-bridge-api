@@ -6,6 +6,8 @@ from sqlalchemy import UUID, DateTime, Float, Integer, String
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
+from .common_enums import ProcessStatus
+
 
 class DisbursementCancellationStatus(Enum):
     NOT_CANCELLED = "NOT_CANCELLED"
@@ -16,11 +18,6 @@ class MapperResolvedFaType(Enum):
     BANK_ACCOUNT = "BANK_ACCOUNT"
     MOBILE_WALLET = "MOBILE_WALLET"
     EMAIL_WALLET = "EMAIL_WALLET"
-
-
-class ProcessStatus(Enum):
-    PENDING = "PENDING"
-    PROCESSED = "PROCESSED"
 
 
 class Disbursement(BaseORMModelWithTimes):
