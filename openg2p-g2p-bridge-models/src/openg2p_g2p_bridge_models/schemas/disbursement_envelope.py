@@ -17,6 +17,7 @@ class DisbursementEnvelopePayload(BaseModel):
     number_of_beneficiaries: Optional[int] = None
     number_of_disbursements: Optional[int] = None
     total_disbursement_amount: Optional[float] = None
+    disbursement_currency_code: Optional[str] = None
     disbursement_schedule_date: Optional[datetime.date] = None
 
 
