@@ -8,12 +8,9 @@ _config = Settings.get_config()
 
 from openg2p_fastapi_common.app import Initializer as BaseInitializer
 from openg2p_g2p_bridge_models.models import (
+    AccountStatement,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
-    AccountStatement,
-    AccountStatementLob,
-    DisbursementRecon,
-    DisbursementErrorRecon,
 )
 
 from .controllers import (

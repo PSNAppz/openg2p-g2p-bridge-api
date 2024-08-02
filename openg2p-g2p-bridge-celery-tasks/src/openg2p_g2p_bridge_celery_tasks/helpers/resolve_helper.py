@@ -86,7 +86,9 @@ class ResolveHelper(BaseService):
         deconstruct_strategy = self.get_deconstruct_strategy(fa)
         if deconstruct_strategy:
             deconstructed_pairs = self._deconstruct(fa, deconstruct_strategy)
-            deconstructed_fa = {pair.key.value: pair.value for pair in deconstructed_pairs}
+            deconstructed_fa = {
+                pair.key.value: pair.value for pair in deconstructed_pairs
+            }
             return deconstructed_fa
         return {}
 

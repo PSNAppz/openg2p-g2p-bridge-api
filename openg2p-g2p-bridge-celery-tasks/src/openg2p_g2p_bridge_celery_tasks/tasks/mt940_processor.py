@@ -284,9 +284,7 @@ def update_existing_disbursement_recon(disbursement_recon, parsed_transaction):
     disbursement_recon.reversal_reason = parsed_transaction["reversal_reason"]
 
 
-def construct_new_disbursement_recon(
-    bank_disbursement_batch_id, parsed_transaction
-):
+def construct_new_disbursement_recon(bank_disbursement_batch_id, parsed_transaction):
     disbursement_recon = DisbursementRecon(
         bank_disbursement_batch_id=bank_disbursement_batch_id,
         disbursement_id=parsed_transaction["disbursement_id"],
