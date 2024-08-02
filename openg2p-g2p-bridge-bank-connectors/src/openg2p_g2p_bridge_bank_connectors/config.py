@@ -9,6 +9,6 @@ class Settings(BaseSettings):
 
     db_dbname: str = "openg2p_g2p_bridge_db"
 
-    funds_available_check_url_example_bank: int = 3
-    funds_block_url_example_bank: int = 3
-    funds_disbursement_url_example_bank: int = 3
+    funds_available_check_url_example_bank: str = ""
+    funds_block_url_example_bank: str = ""
+    funds_disbursement_url_example_bank: str = ""

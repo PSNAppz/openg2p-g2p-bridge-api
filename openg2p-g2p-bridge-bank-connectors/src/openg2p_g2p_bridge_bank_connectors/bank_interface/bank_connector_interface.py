@@ -1,11 +1,11 @@
 import enum
-from datetime import datetime
 from typing import List, Optional
 
 from openg2p_fastapi_common.service import BaseService
 from openg2p_g2p_bridge_models.models import (
     FundsAvailableWithBankEnum,
     FundsBlockedWithBankEnum,
+    MapperResolvedFaType,
 )
 from pydantic import BaseModel
 
@@ -21,7 +21,8 @@ class BlockFundsResponse(BaseModel):
     error_code: str
 
 
-class PaymentPayload(BaseModel):
+class DisbursementPaymentPayload(BaseModel):
+    disbursement_id: str
     remitting_account: str
     remitting_account_currency: str
     payment_amount: float
@@ -32,7 +33,7 @@ class PaymentPayload(BaseModel):
 
     beneficiary_account: Optional[str] = None
     beneficiary_account_currency: Optional[str] = None
-    beneficiary_account_type: Optional[str] = None
+    beneficiary_account_type: Optional[MapperResolvedFaType] = None
     beneficiary_bank_code: Optional[str] = None
     beneficiary_branch_code: Optional[str] = None
 
@@ -42,9 +43,10 @@ class PaymentPayload(BaseModel):
     beneficiary_email: Optional[str] = None
     beneficiary_email_wallet_provider: Optional[str] = None
 
+    disbursement_narrative: Optional[str] = None
     benefit_program_mnemonic: Optional[str] = None
     cycle_code_mnemonic: Optional[str] = None
-    payment_date: datetime
+    payment_date: str
 
 
 class PaymentStatus(enum.Enum):
@@ -65,6 +67,17 @@ class BankConnectorInterface(BaseService):
         raise NotImplementedError()
 
     def initiate_payment(
-        self, payment_payloads: List[PaymentPayload]
+        self, payment_payloads: List[DisbursementPaymentPayload]
     ) -> PaymentResponse:
+        raise NotImplementedError()
+
+    def retrieve_disbursement_id(
+        self, bank_reference: str, customer_reference: str, narratives: str
+    ) -> str:
+        raise NotImplementedError()
+
+    def retrieve_beneficiary_name(self, narratives: str) -> str:
+        raise NotImplementedError()
+
+    def retrieve_reversal_reason(self, narratives: str) -> str:
         raise NotImplementedError()
