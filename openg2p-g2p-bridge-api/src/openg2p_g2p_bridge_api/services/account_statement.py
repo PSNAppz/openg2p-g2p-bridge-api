@@ -18,6 +18,7 @@ _logger = logging.getLogger(_config.logging_default_logger_name)
 
 class AccountStatementService(BaseService):
     async def upload_mt940(self, statement_file: UploadFile) -> str:
+        _logger.info(f"Uploading statement file")
         try:
             statement_file = await statement_file.read()
         except Exception as e:
@@ -44,12 +45,13 @@ class AccountStatementService(BaseService):
             session.add(statement_lob)
 
             await session.commit()
-
+        _logger.info(f"Statement file uploaded successfully")
         return statement_id
 
     async def construct_account_statement_success_response(
         self, statement_id: str
     ) -> AccountStatementResponse:
+        _logger.info(f"Constructing account statement success response")
         return AccountStatementResponse(
             response_status=ResponseStatus.SUCCESS,
             statement_id=statement_id,
@@ -59,6 +61,7 @@ class AccountStatementService(BaseService):
     async def construct_account_statement_error_response(
         self, code: G2PBridgeErrorCodes
     ) -> AccountStatementResponse:
+        _logger.error(f"Constructing account statement error response")
         return AccountStatementResponse(
             response_status=ResponseStatus.FAILURE,
             statement_id="",

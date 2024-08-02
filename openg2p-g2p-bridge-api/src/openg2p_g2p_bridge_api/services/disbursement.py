@@ -38,6 +38,7 @@ class DisbursementService(BaseService):
     async def create_disbursements(
         self, disbursement_request: DisbursementRequest
     ) -> List[DisbursementPayload]:
+        _logger.info("Creating Disbursements")
         session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
         async with session_maker() as session:
             try:
@@ -46,12 +47,14 @@ class DisbursementService(BaseService):
                     disbursement_payloads=disbursement_request.request_payload,
                 )
             except DisbursementException as e:
+                _logger.error(f"Error validating disbursement envelope: {str(e)}")
                 raise e
             is_error_free = await self.validate_disbursement_request(
                 disbursement_payloads=disbursement_request.request_payload
             )
 
             if not is_error_free:
+                _logger.error("Error validating disbursement request")
                 raise DisbursementException(
                     code=G2PBridgeErrorCodes.INVALID_DISBURSEMENT_PAYLOAD,
                     disbursement_payloads=disbursement_request.request_payload,
@@ -105,10 +108,11 @@ class DisbursementService(BaseService):
 
             session.add(bank_disbursement_batch_status)
             await session.commit()
-
+            _logger.info("Disbursements Created Successfully!")
             return disbursement_request.request_payload
 
     async def update_disbursement_envelope_batch_status(self, disbursements, session):
+        _logger.info("Updating Disbursement Envelope Batch Status")
         disbursement_envelope_batch_status = (
             (
                 await session.execute(
@@ -127,11 +131,13 @@ class DisbursementService(BaseService):
         disbursement_envelope_batch_status.total_disbursement_amount_received += sum(
             [disbursement.disbursement_amount for disbursement in disbursements]
         )
+        _logger.info("Disbursement Envelope Batch Status Updated!")
         return disbursement_envelope_batch_status
 
     async def construct_disbursements(
         self, disbursement_payloads: List[DisbursementPayload]
     ) -> List[Disbursement]:
+        _logger.info("Constructing Disbursements")
         disbursements: List[Disbursement] = []
         for disbursement_payload in disbursement_payloads:
             disbursement = Disbursement(
@@ -148,11 +154,13 @@ class DisbursementService(BaseService):
             disbursement_payload.id = disbursement.id
             disbursement_payload.disbursement_id = disbursement.disbursement_id
             disbursements.append(disbursement)
+        _logger.info("Disbursements Constructed!")
         return disbursements
 
     async def construct_disbursement_batch_controls(
         self, disbursements: List[Disbursement]
     ):
+        _logger.info("Constructing Disbursement Batch Controls")
         disbursement_batch_controls = []
         mapper_resolution_batch_id = str(uuid.uuid4())
         bank_disbursement_batch_id = str(uuid.uuid4())
@@ -166,11 +174,13 @@ class DisbursementService(BaseService):
                 active=True,
             )
             disbursement_batch_controls.append(disbursement_batch_control)
+        _logger.info("Disbursement Batch Controls Constructed!")
         return disbursement_batch_controls
 
     async def validate_disbursement_request(
         self, disbursement_payloads: List[DisbursementPayload]
     ):
+        _logger.info("Validating Disbursement Request")
         absolutely_no_error = True
 
         for disbursement_payload in disbursement_payloads:
@@ -204,12 +214,13 @@ class DisbursementService(BaseService):
 
             if len(disbursement_payload.response_error_codes) > 0:
                 absolutely_no_error = False
-
+        _logger.info("Disbursement Request Validated!")
         return absolutely_no_error
 
     async def validate_disbursement_envelope(
         self, session, disbursement_payloads: List[DisbursementPayload]
     ):
+        _logger.info("Validating Disbursement Envelope")
         disbursement_envelope_id = disbursement_payloads[0].disbursement_envelope_id
         if not all(
             disbursement_payload.disbursement_envelope_id == disbursement_envelope_id
@@ -232,12 +243,14 @@ class DisbursementService(BaseService):
             .first()
         )
         if not disbursement_envelope:
+            _logger.error("Disbursement Envelope Not Found!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_NOT_FOUND,
                 disbursement_payloads,
             )
 
         if disbursement_envelope.cancellation_status == CancellationStatus.Cancelled:
+            _logger.error("Disbursement Envelope Already Canceled!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED,
                 disbursement_payloads,
@@ -274,6 +287,7 @@ class DisbursementService(BaseService):
             no_of_disbursements_after_this_request
             > disbursement_envelope.number_of_disbursements
         ):
+            _logger.error("Number of Disbursements Exceeds Declared!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.NO_OF_DISBURSEMENTS_EXCEEDS_DECLARED,
                 disbursement_payloads,
@@ -287,7 +301,7 @@ class DisbursementService(BaseService):
                 G2PBridgeErrorCodes.TOTAL_DISBURSEMENT_AMOUNT_EXCEEDS_DECLARED,
                 disbursement_payloads,
             )
-
+        _logger.info("Disbursement Envelope Validated!")
         return True
 
     async def construct_disbursement_error_response(
@@ -295,27 +309,30 @@ class DisbursementService(BaseService):
         code: G2PBridgeErrorCodes,
         disbursement_payloads: List[DisbursementPayload],
     ) -> DisbursementResponse:
+        _logger.info("Constructing Disbursement Error Response")
         disbursement_response: DisbursementResponse = DisbursementResponse(
             response_status=ResponseStatus.FAILURE,
             response_payload=disbursement_payloads,
             response_error_code=code.value,
         )
-
+        _logger.info("Disbursement Error Response Constructed!")
         return disbursement_response
 
     async def construct_disbursement_success_response(
         self, disbursement_payloads: List[DisbursementPayload]
     ) -> DisbursementResponse:
+        _logger.info("Constructing Disbursement Success Response")
         disbursement_response: DisbursementResponse = DisbursementResponse(
             response_status=ResponseStatus.SUCCESS,
             response_payload=disbursement_payloads,
         )
-
+        _logger.info("Disbursement Success Response Constructed!")
         return disbursement_response
 
     async def cancel_disbursements(
         self, disbursement_request: DisbursementRequest
     ) -> List[DisbursementPayload]:
+        _logger.info("Cancelling Disbursements")
         session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
         async with session_maker() as session:
             is_payload_valid = await self.validate_request_payload(
@@ -323,6 +340,7 @@ class DisbursementService(BaseService):
             )
 
             if not is_payload_valid:
+                _logger.error("Error validating disbursement request")
                 raise DisbursementException(
                     code=G2PBridgeErrorCodes.INVALID_DISBURSEMENT_PAYLOAD,
                     disbursement_payloads=disbursement_request.request_payload,
@@ -332,6 +350,7 @@ class DisbursementService(BaseService):
                 Disbursement
             ] = await self.fetch_disbursements_from_db(disbursement_request, session)
             if not disbursements_in_db:
+                _logger.error("Disbursements not found in DB")
                 raise DisbursementException(
                     code=G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
                     disbursement_payloads=disbursement_request.request_payload,
@@ -342,6 +361,7 @@ class DisbursementService(BaseService):
                     disbursements_in_db, disbursement_request.request_payload
                 )
             except DisbursementException as e:
+                _logger.error(f"Error checking for single envelope: {str(e)}")
                 raise e
 
             try:
@@ -351,6 +371,9 @@ class DisbursementService(BaseService):
                     session=session,
                 )
             except DisbursementException as e:
+                _logger.error(
+                    f"Error validating envelope for disbursement cancellation: {str(e)}"
+                )
                 raise e
 
             invalid_disbursements_exist = await self.check_for_invalid_disbursements(
@@ -398,26 +421,30 @@ class DisbursementService(BaseService):
             session.add_all(disbursements_in_db)
             session.add(disbursement_envelope_batch_status)
             await session.commit()
-
+            _logger.info("Disbursements Cancelled Successfully!")
             return disbursement_request.request_payload
 
     async def check_for_single_envelope(
         self, disbursements_in_db, disbursement_payloads
     ):
+        _logger.info("Checking for Single Envelope")
         disbursement_envelope_ids = {
             disbursement.disbursement_envelope_id
             for disbursement in disbursements_in_db
         }
         if len(disbursement_envelope_ids) > 1:
+            _logger.error("Multiple Envelopes Found!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.MULTIPLE_ENVELOPES_FOUND,
                 disbursement_payloads,
             )
+        _logger.info("Single Envelope Found!")
         return True
 
     async def check_for_invalid_disbursements(
         self, disbursement_request, disbursements_in_db
     ) -> bool:
+        _logger.info("Checking for Invalid Disbursements")
         invalid_disbursements_exist = False
         for disbursement_payload in disbursement_request.request_payload:
             if disbursement_payload.disbursement_id not in [
@@ -437,11 +464,13 @@ class DisbursementService(BaseService):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.DISBURSEMENT_ALREADY_CANCELED.value
                 )
+        _logger.info("Invalid Disbursements Checked!")
         return invalid_disbursements_exist
 
     async def fetch_disbursements_from_db(
         self, disbursement_request, session
     ) -> List[Disbursement]:
+        _logger.info("Fetching Disbursements from DB")
         disbursements_in_db = (
             (
                 await session.execute(
@@ -458,6 +487,7 @@ class DisbursementService(BaseService):
             .scalars()
             .all()
         )
+        _logger.info("Disbursements Fetched from DB!")
         return disbursements_in_db
 
     async def validate_envelope_for_disbursement_cancellation(
@@ -466,6 +496,7 @@ class DisbursementService(BaseService):
         disbursement_payloads: List[DisbursementPayload],
         session,
     ):
+        _logger.info("Validating Envelope for Disbursement Cancellation")
         disbursement_envelope = (
             (
                 await session.execute(
@@ -479,18 +510,21 @@ class DisbursementService(BaseService):
             .first()
         )
         if not disbursement_envelope:
+            _logger.error("Disbursement Envelope Not Found!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_NOT_FOUND,
                 disbursement_payloads,
             )
 
         if disbursement_envelope.cancellation_status == CancellationStatus.Cancelled:
+            _logger.error("Disbursement Envelope Already Canceled!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED,
                 disbursement_payloads,
             )
 
         if disbursement_envelope.disbursement_schedule_date <= datetime.now().date():
+            _logger.error("Disbursement Envelope Schedule Date Reached!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_SCHEDULE_DATE_REACHED,
                 disbursement_payloads,
@@ -524,22 +558,25 @@ class DisbursementService(BaseService):
         )
 
         if no_of_disbursements_after_this_request < 0:
+            _logger.error("Number of Disbursements Less Than Zero!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.NO_OF_DISBURSEMENTS_LESS_THAN_ZERO,
                 disbursement_payloads,
             )
 
         if total_disbursement_amount_after_this_request < 0:
+            _logger.error("Total Disbursement Amount Less Than Zero!")
             raise DisbursementException(
                 G2PBridgeErrorCodes.TOTAL_DISBURSEMENT_AMOUNT_LESS_THAN_ZERO,
                 disbursement_payloads,
             )
-
+        _logger.info("Envelope Validated for Disbursement Cancellation!")
         return True
 
     async def validate_request_payload(
         self, disbursement_payloads: List[DisbursementPayload]
     ):
+        _logger.info("Validating Request Payload")
         absolutely_no_error = True
 
         for disbursement_payload in disbursement_payloads:
@@ -554,5 +591,5 @@ class DisbursementService(BaseService):
 
             if len(disbursement_payload.response_error_codes) > 0:
                 absolutely_no_error = False
-
+        _logger.info("Request Payload Validated!")
         return absolutely_no_error
