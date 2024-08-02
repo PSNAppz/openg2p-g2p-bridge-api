@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         """
     openapi_version: str = __version__
 
-    db_dbname: str = "openg2p_g2p_bridge_db"
-    db_driver: str = "postgresql"
+    db_dbname: str = "example_bank_db"
+    # db_driver: str = "postgresql"
 
     payment_initiate_attempts: int = 3

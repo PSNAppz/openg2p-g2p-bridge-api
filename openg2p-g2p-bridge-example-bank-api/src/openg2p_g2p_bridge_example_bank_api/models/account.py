@@ -39,10 +39,14 @@ class FundBlock(BaseORMModelWithTimes):
 
 class InitiatePaymentRequest(BaseORMModelWithTimes):
     __tablename__ = "initiate_payment_requests"
+    payment_reference_number = mapped_column(
+        String, index=True, unique=True
+    )  # disbursement id
+
     remitting_account: Mapped[str] = mapped_column(String, nullable=False)
     remitting_account_currency: Mapped[str] = mapped_column(String, nullable=False)
     payment_amount: Mapped[float] = mapped_column(Float, nullable=False)
-    payment_date: Mapped[datetime] = mapped_column(DateTime(), nullable=False)
+    payment_date: Mapped[str] = mapped_column(String, nullable=False)
     funds_blocked_reference_number: Mapped[str] = mapped_column(String, nullable=False)
 
     beneficiary_name: Mapped[str] = mapped_column(String)
@@ -52,16 +56,26 @@ class InitiatePaymentRequest(BaseORMModelWithTimes):
     beneficiary_bank_code: Mapped[str] = mapped_column(String)
     beneficiary_branch_code: Mapped[str] = mapped_column(String)
 
-    narrative_1: Mapped[str] = mapped_column(String, nullable=True)  # disbursement id
-    narrative_2: Mapped[str] = mapped_column(String, nullable=True)  # beneficiary id
-    narrative_3: Mapped[str] = mapped_column(String, nullable=True)  # program pneumonic
-    narrative_4: Mapped[str] = mapped_column(
+    beneficiary_mobile_wallet_provider: Mapped[str] = mapped_column(
+        String, nullable=True
+    )
+    beneficiary_phone_no: Mapped[str] = mapped_column(String, nullable=True)
+
+    beneficiary_email: Mapped[str] = mapped_column(String, nullable=True)
+    beneficiary_email_wallet_provider: Mapped[str] = mapped_column(
+        String, nullable=True
+    )
+
+    narrative_1: Mapped[str] = mapped_column(
+        String, nullable=True
+    )  # disbursement narrative
+    narrative_2: Mapped[str] = mapped_column(String, nullable=True)  # program pneumonic
+    narrative_3: Mapped[str] = mapped_column(
         String, nullable=True
     )  # cycle code pneumonic
-    narrative_5: Mapped[str] = mapped_column(String, nullable=True)  # beneficiary email
-    narrative_6: Mapped[str] = mapped_column(
-        String, nullable=True
-    )  # beneficiary phone number
+    narrative_4: Mapped[str] = mapped_column(String, nullable=True)  # beneficiary id
+    narrative_5: Mapped[str] = mapped_column(String, nullable=True)
+    narrative_6: Mapped[str] = mapped_column(String, nullable=True)
 
     payment_initiate_attempts: Mapped[int] = mapped_column(Integer, default=0)
     payment_status: Mapped[PaymentStatus] = mapped_column(
@@ -72,6 +86,7 @@ class InitiatePaymentRequest(BaseORMModelWithTimes):
 class AccountingLog(BaseORMModelWithTimes):
     __tablename__ = "accounting_logs"
     reference_no: Mapped[str] = mapped_column(String, index=True, unique=True)
+    customer_reference_no: Mapped[str] = mapped_column(String, index=True)
     debit_credit: Mapped[DebitCreditTypes] = mapped_column(SqlEnum(DebitCreditTypes))
     account_number: Mapped[str] = mapped_column(String, index=True)
     transaction_amount: Mapped[float] = mapped_column(Float)
