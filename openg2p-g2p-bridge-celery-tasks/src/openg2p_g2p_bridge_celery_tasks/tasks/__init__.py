@@ -14,3 +14,4 @@ from .mapper_resolution_task import (
     mapper_resolution_beat_producer,
     mapper_resolution_worker,
 )
+from .mt940_processor import mt940_processor_beat_producer, mt940_processor_worker

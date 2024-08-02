@@ -4,7 +4,7 @@ from datetime import datetime
 from openg2p_g2p_bridge_bank_connectors.bank_connectors import BankConnectorFactory
 from openg2p_g2p_bridge_bank_connectors.bank_interface.bank_connector_interface import (
     BankConnectorInterface,
-    PaymentPayload,
+    DisbursementPaymentPayload,
     PaymentStatus,
 )
 from openg2p_g2p_bridge_models.models import (
@@ -163,7 +163,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
             )
 
             payment_payloads.append(
-                PaymentPayload(
+                DisbursementPaymentPayload(
                     remitting_account=benefit_program_configuration.sponsor_bank_account_number,
                     remitting_account_currency=benefit_program_configuration.sponsor_bank_account_currency,
                     payment_amount=disbursement.disbursement_amount,
@@ -178,7 +178,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     beneficiary_branch_code=mapper_details.branch_code
                     if mapper_details
                     else None,
-                    payment_date=datetime.utcnow(),
+                    payment_date=str(datetime.date(datetime.utcnow())),
                     beneficiary_id=disbursement.beneficiary_id,
                     beneficiary_name=disbursement.beneficiary_name,
                     beneficiary_account_type=mapper_details.mapper_resolved_fa_type,
@@ -194,6 +194,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     beneficiary_email=mapper_details.email_address
                     if mapper_details
                     else None,
+                    disbursement_narrative=disbursement.narrative,
                     benefit_program_mnemonic=envelope.benefit_program_mnemonic,
                     cycle_code_mnemonic=envelope.cycle_code_mnemonic,
                 )

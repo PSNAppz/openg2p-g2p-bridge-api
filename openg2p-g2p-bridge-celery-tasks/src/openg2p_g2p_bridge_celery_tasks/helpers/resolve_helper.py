@@ -90,7 +90,6 @@ class ResolveHelper(BaseService):
             return deconstructed_fa
         return {}
 
-    # TODO: Update this method to return the correct deconstruct strategy based on the FA type KEY Val pair
     def get_deconstruct_strategy(self, fa: str) -> str:
         if fa.endswith(MapperResolvedFaType.BANK_ACCOUNT.value):
             return _config.bank_fa_deconstruct_strategy
