@@ -77,6 +77,4 @@ class DisbursementErrorRecon(BaseORMModelWithTimes):
         SqlEnum(G2PBridgeErrorCodes), nullable=True
     )
     disbursement_id: Mapped[str] = mapped_column(String, index=True)
-    bank_reference_number: Mapped[str] = mapped_column(
-        String, nullable=True
-    )
+    bank_reference_number: Mapped[str] = mapped_column(String, nullable=True)

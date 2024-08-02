@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Enum as SqlEnum
 
 from openg2p_fastapi_common.models import BaseORMModelWithTimes
 from sqlalchemy import Boolean, Date, DateTime, Integer, String
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -42,7 +42,9 @@ class DisbursementEnvelope(BaseORMModelWithTimes):
     __tablename__ = "disbursement_envelopes"
     disbursement_envelope_id: Mapped[str] = mapped_column(String, unique=True)
     benefit_program_mnemonic: Mapped[str] = mapped_column(String)
-    disbursement_frequency: Mapped[DisbursementFrequency] = mapped_column(SqlEnum(DisbursementFrequency))
+    disbursement_frequency: Mapped[DisbursementFrequency] = mapped_column(
+        SqlEnum(DisbursementFrequency)
+    )
     cycle_code_mnemonic: Mapped[str] = mapped_column(String)
     number_of_beneficiaries: Mapped[int] = mapped_column(Integer)
     number_of_disbursements: Mapped[int] = mapped_column(Integer)
