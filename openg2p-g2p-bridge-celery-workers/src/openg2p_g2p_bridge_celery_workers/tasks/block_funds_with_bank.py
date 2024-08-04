@@ -8,13 +8,10 @@ from openg2p_g2p_bridge_bank_connectors.bank_interface import (
 )
 from openg2p_g2p_bridge_models.models import (
     BenefitProgramConfiguration,
-    CancellationStatus,
     DisbursementEnvelope,
     DisbursementEnvelopeBatchStatus,
-    FundsAvailableWithBankEnum,
     FundsBlockedWithBankEnum,
 )
-from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
@@ -25,56 +22,9 @@ _logger = logging.getLogger(_config.logging_default_logger_name)
 _engine = get_engine()
 
 
-@celery_app.task(name="block_funds_with_bank_beat_producer")
-def block_funds_with_bank_beat_producer():
-    session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
-
-    with session_maker() as session:
-        envelopes = (
-            session.execute(
-                select(DisbursementEnvelope)
-                .filter(
-                    DisbursementEnvelope.disbursement_schedule_date
-                    <= datetime.utcnow(),
-                    DisbursementEnvelope.cancellation_status
-                    == CancellationStatus.Not_Cancelled.value,
-                )
-                .join(
-                    DisbursementEnvelopeBatchStatus,
-                    DisbursementEnvelope.disbursement_envelope_id
-                    == DisbursementEnvelopeBatchStatus.disbursement_envelope_id,
-                )
-                .filter(
-                    DisbursementEnvelope.number_of_disbursements
-                    == DisbursementEnvelopeBatchStatus.number_of_disbursements_received,
-                    DisbursementEnvelopeBatchStatus.funds_available_with_bank
-                    == FundsAvailableWithBankEnum.FUNDS_AVAILABLE.value,
-                    or_(
-                        and_(
-                            DisbursementEnvelopeBatchStatus.funds_blocked_with_bank
-                            == FundsBlockedWithBankEnum.PENDING_CHECK.value,
-                            DisbursementEnvelopeBatchStatus.funds_blocked_attempts
-                            < _config.funds_blocked_attempts,
-                        ),
-                        and_(
-                            DisbursementEnvelopeBatchStatus.funds_blocked_with_bank
-                            == FundsBlockedWithBankEnum.FUNDS_BLOCK_FAILURE.value,
-                            DisbursementEnvelopeBatchStatus.funds_blocked_attempts
-                            < _config.funds_blocked_attempts,
-                        ),
-                    ),
-                )
-            )
-            .scalars()
-            .all()
-        )
-
-        for envelope in envelopes:
-            block_funds_with_bank_worker.delay(envelope.disbursement_envelope_id)
-
-
 @celery_app.task(name="block_funds_with_bank_worker")
 def block_funds_with_bank_worker(disbursement_envelope_id: str):
+    _logger.info(f"Blocking funds with bank for envelope: {disbursement_envelope_id}")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with session_maker() as session:
@@ -155,3 +105,6 @@ def block_funds_with_bank_worker(disbursement_envelope_id: str):
             batch_status.funds_blocked_reference_number = ""
 
         session.commit()
+        _logger.info(
+            f"Completed blocking funds with bank for envelope: {disbursement_envelope_id}"
+        )

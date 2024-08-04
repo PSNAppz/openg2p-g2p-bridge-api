@@ -28,12 +28,6 @@ class Settings(BaseSettings):
     funds_disbursement_attempts: int = 3
     statement_process_attempts: int = 3
 
-    mapper_resolve_frequency: int = 10
-    funds_available_check_frequency: int = 10
-    funds_blocked_frequency: int = 10
-    funds_disbursement_frequency: int = 10
-    statement_process_frequency: int = 3600
-
     bank_fa_deconstruct_strategy: str = ""
     mobile_wallet_deconstruct_strategy: str = ""
     email_wallet_deconstruct_strategy: str = ""

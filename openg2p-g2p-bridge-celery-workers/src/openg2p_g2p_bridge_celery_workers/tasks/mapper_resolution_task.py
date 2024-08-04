@@ -10,7 +10,7 @@ from openg2p_g2p_bridge_models.models import (
 )
 from openg2p_g2pconnect_mapper_lib.client import MapperResolveClient
 from openg2p_g2pconnect_mapper_lib.schemas import ResolveRequest
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
@@ -20,32 +20,6 @@ from ..helpers import ResolveHelper
 _config = Settings.get_config()
 _logger = logging.getLogger(_config.logging_default_logger_name)
 _engine = get_engine()
-
-
-@celery_app.task(name="mapper_resolution_beat_producer")
-def mapper_resolution_beat_producer():
-    session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
-
-    with session_maker() as session:
-        mapper_resolution_batch_statuses = (
-            session.execute(
-                select(MapperResolutionBatchStatus).filter(
-                    and_(
-                        MapperResolutionBatchStatus.resolution_status
-                        == ProcessStatus.PENDING,
-                        MapperResolutionBatchStatus.resolution_attempts
-                        < _config.mapper_resolve_attempts,
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-
-        for mapper_resolution_batch_status in mapper_resolution_batch_statuses:
-            mapper_resolution_worker.delay(
-                mapper_resolution_batch_status.mapper_resolution_batch_id
-            )
 
 
 @celery_app.task(name="mapper_resolution_worker")
