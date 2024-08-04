@@ -2,7 +2,7 @@
 
 # ruff: noqa: I001
 
-from openg2p_g2p_bridge_celery_tasks.app import Initializer, celery_app
+from openg2p_g2p_bridge_celery_beat_producers.app import Initializer, celery_app
 from openg2p_fastapi_common.ping import PingInitializer
 
 initializer = Initializer()
