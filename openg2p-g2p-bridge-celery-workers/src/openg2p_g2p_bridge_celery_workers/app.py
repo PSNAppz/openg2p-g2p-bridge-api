@@ -37,25 +37,7 @@ celery_app = Celery(
     "g2p_bridge_celery_tasks",
     broker="redis://localhost:6379/0",
     backend="redis://localhost:6379/0",
-    include=["openg2p_g2p_bridge_celery_tasks.tasks.mapper_resolution_task"],
+    include=["openg2p_g2p_bridge_celery_workers.tasks.mapper_resolution_task"],
 )
 
-celery_app.conf.beat_schedule = {
-    "mapper_resolution_beat_producer": {
-        "task": "mapper_resolution_beat_producer",
-        "schedule": _config.mapper_resolve_frequency,
-    },
-    "check_funds_with_bank_beat_producer": {
-        "task": "check_funds_with_bank_beat_producer",
-        "schedule": _config.funds_available_check_frequency,
-    },
-    "block_funds_with_bank_beat_producer": {
-        "task": "block_funds_with_bank_beat_producer",
-        "schedule": _config.funds_blocked_frequency,
-    },
-    "disburse_funds_from_bank_beat_producer": {
-        "task": "disburse_funds_from_bank_beat_producer",
-        "schedule": _config.funds_disbursement_frequency,
-    },
-}
 celery_app.conf.timezone = "UTC"
