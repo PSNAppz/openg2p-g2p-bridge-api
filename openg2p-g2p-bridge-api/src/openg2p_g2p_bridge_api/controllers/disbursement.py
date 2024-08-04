@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from openg2p_fastapi_common.controller import BaseController
@@ -8,7 +9,11 @@ from openg2p_g2p_bridge_models.schemas import (
     DisbursementResponse,
 )
 
+from ..config import Settings
 from ..services import DisbursementService
+
+_config = Settings.get_config()
+_logger = logging.getLogger(_config.logging_default_logger_name)
 
 
 class DisbursementController(BaseController):
@@ -34,6 +39,7 @@ class DisbursementController(BaseController):
     async def create_disbursements(
         self, disbursement_request: DisbursementRequest
     ) -> DisbursementResponse:
+        _logger.info("Creating disbursements")
         try:
             disbursement_payloads: List[
                 DisbursementPayload
@@ -41,6 +47,7 @@ class DisbursementController(BaseController):
                 disbursement_request
             )
         except DisbursementException as e:
+            _logger.error("Error creating disbursements")
             error_response: DisbursementResponse = (
                 await self.disbursement_service.construct_disbursement_error_response(
                     e.code, e.disbursement_payloads
@@ -53,12 +60,14 @@ class DisbursementController(BaseController):
                 disbursement_payloads
             )
         )
+        _logger.info("Disbursements created successfully")
 
         return disbursement_response
 
     async def cancel_disbursements(
         self, disbursement_request: DisbursementRequest
     ) -> DisbursementResponse:
+        _logger.info("Cancelling disbursements")
         try:
             disbursement_payloads: List[
                 DisbursementPayload
@@ -66,6 +75,7 @@ class DisbursementController(BaseController):
                 disbursement_request
             )
         except DisbursementException as e:
+            _logger.error("Error cancelling disbursements")
             error_response: DisbursementResponse = (
                 await self.disbursement_service.construct_disbursement_error_response(
                     e.code, e.disbursement_payloads
@@ -78,5 +88,5 @@ class DisbursementController(BaseController):
                 disbursement_payloads
             )
         )
-
+        _logger.info("Disbursements cancelled successfully")
         return disbursement_response
