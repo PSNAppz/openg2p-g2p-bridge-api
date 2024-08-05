@@ -54,5 +54,9 @@ celery_app.conf.beat_schedule = {
         "task": "disburse_funds_from_bank_beat_producer",
         "schedule": _config.funds_disbursement_frequency,
     },
+    "mt940_processor_beat_producer": {
+        "task": "mt940_processor_beat_producer",
+        "schedule": _config.mt940_processor_frequency,
+    },
 }
 celery_app.conf.timezone = "UTC"

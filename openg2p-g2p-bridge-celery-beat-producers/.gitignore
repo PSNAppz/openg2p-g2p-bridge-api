@@ -79,3 +79,4 @@ docs/_build/
 # Ignore secret files and env
 .secrets.*
 .env
+*.db
