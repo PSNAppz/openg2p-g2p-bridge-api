@@ -51,11 +51,11 @@ class BankPaymentPayload(BaseModel):
 
 
 class ExampleBankConnector(BankConnectorInterface):
-    def check_funds(self, account_no, currency, amount) -> CheckFundsResponse:
+    def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         try:
             with httpx.Client() as client:
                 request_data = {
-                    "account_number": account_no,
+                    "account_number": account_number,
                     "account_currency": currency,
                     "total_funds_needed": amount,
                 }
@@ -77,11 +77,11 @@ class ExampleBankConnector(BankConnectorInterface):
                 status=FundsAvailableWithBankEnum.PENDING_CHECK, error_code=str(e)
             )
 
-    def block_funds(self, account_no, currency, amount) -> BlockFundsResponse:
+    def block_funds(self, account_number, currency, amount) -> BlockFundsResponse:
         try:
             with httpx.Client() as client:
                 request_data = {
-                    "account_no": account_no,
+                    "account_number": account_number,
                     "currency": currency,
                     "amount": amount,
                 }
