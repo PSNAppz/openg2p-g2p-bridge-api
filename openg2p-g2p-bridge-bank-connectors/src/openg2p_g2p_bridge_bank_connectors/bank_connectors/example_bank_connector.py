@@ -1,4 +1,5 @@
 from typing import List, Optional
+import logging
 
 import httpx
 from openg2p_g2p_bridge_models.models import (
@@ -18,7 +19,7 @@ from ..bank_interface.bank_connector_interface import (
 from ..config import Settings
 
 _config = Settings.get_config()
-
+_logger = logging.getLogger(_config.logging_default_logger_name)
 
 class BankPaymentPayload(BaseModel):
     payment_reference_number: str
@@ -52,6 +53,9 @@ class BankPaymentPayload(BaseModel):
 
 class ExampleBankConnector(BankConnectorInterface):
     def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
+        _logger.info(
+            f"Checking funds availability for account_number: {account_number}, currency: {currency}, amount: {amount}"
+        )
         try:
             with httpx.Client() as client:
                 request_data = {
@@ -66,18 +70,30 @@ class ExampleBankConnector(BankConnectorInterface):
 
                 data = response.json()
                 if data["status"] == "success":
+                    _logger.info(
+                        f"Funds available for account_number: {account_number}, currency: {currency}, amount: {amount}"
+                    )
                     return CheckFundsResponse(
                         status=FundsAvailableWithBankEnum.FUNDS_AVAILABLE, error_code=""
                     )
+                _logger.info(
+                    f"Funds not available for account_number: {account_number}, currency: {currency}, amount: {amount}"
+                )
                 return CheckFundsResponse(
                     status=FundsAvailableWithBankEnum.FUNDS_NOT_AVAILABLE, error_code=""
                 )
         except httpx.HTTPStatusError as e:
+            _logger.error(
+                f"Error checking funds availability for account_number: {account_number}, currency: {currency}, amount: {amount}"
+            )
             return CheckFundsResponse(
                 status=FundsAvailableWithBankEnum.PENDING_CHECK, error_code=str(e)
             )
 
     def block_funds(self, account_number, currency, amount) -> BlockFundsResponse:
+        _logger.info(
+            f"Blocking funds for account_number: {account_number}, currency: {currency}, amount: {amount}"
+        )
         try:
             with httpx.Client() as client:
                 request_data = {
@@ -92,17 +108,26 @@ class ExampleBankConnector(BankConnectorInterface):
 
                 data = response.json()
                 if data["status"] == "success":
+                    _logger.info(
+                        f"Funds blocked for account_number: {account_number}, currency: {currency}, amount: {amount}"
+                    )
                     return BlockFundsResponse(
                         status=FundsBlockedWithBankEnum.FUNDS_BLOCK_SUCCESS,
                         block_reference_no=data["block_reference_no"],
                         error_code="",
                     )
+                _logger.error(
+                    f"Funds block failed for account_number: {account_number}, currency: {currency}, amount: {amount}"
+                )
                 return BlockFundsResponse(
                     status=FundsBlockedWithBankEnum.FUNDS_BLOCK_FAILURE,
                     block_reference_no="",
                     error_code=data.get("error_code", ""),
                 )
         except httpx.HTTPStatusError as e:
+            _logger.error(
+                f"Error blocking funds for account_number: {account_number}, currency: {currency}, amount: {amount}"
+            )
             return BlockFundsResponse(
                 status=FundsBlockedWithBankEnum.FUNDS_BLOCK_FAILURE,
                 block_reference_no="",
@@ -112,6 +137,7 @@ class ExampleBankConnector(BankConnectorInterface):
     def initiate_payment(
         self, disbursement_payment_payloads: List[DisbursementPaymentPayload]
     ) -> PaymentResponse:
+        _logger.info(f"Initiating payment for {len(disbursement_payment_payloads)} disbursements")
         try:
             with httpx.Client() as client:
                 bank_payment_payloads = []
@@ -152,11 +178,14 @@ class ExampleBankConnector(BankConnectorInterface):
 
                 data = response.json()
                 if data["status"] == "success":
+                    _logger.info(f"Payment initiated successfully")
                     return PaymentResponse(status=PaymentStatus.SUCCESS, error_code="")
+                _logger.error(f"Payment initiation failed")
                 return PaymentResponse(
                     status=PaymentStatus.ERROR, error_code=data.get("error_message", "")
                 )
         except httpx.HTTPStatusError as e:
+            _logger.error(f"Error initiating payment: {e}")
             return PaymentResponse(status=PaymentStatus.ERROR, error_code=str(e))
 
     def retrieve_disbursement_id(
