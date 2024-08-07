@@ -94,6 +94,9 @@ def mt940_processor_worker(statement_id: str):
                 .first()
             )
             if not benefit_program_configuration:
+                _logger.error(
+                    f"Benefit program configuration not found for account number: {account_statement.account_number}"
+                )
                 account_statement.statement_process_status = ProcessStatus.ERROR
                 account_statement.statement_process_error_code = (
                     G2PBridgeErrorCodes.INVALID_ACCOUNT_NUMBER.value
@@ -141,7 +144,9 @@ def mt940_processor_worker(statement_id: str):
 
             # Process only debit transactions
             for parsed_transaction in parsed_transactions_d:
-                bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
+                bank_disbursement_batch_id = get_bank_batch_id(
+                    parsed_transaction, session
+                )
 
                 if not bank_disbursement_batch_id:
                     disbursement_error_recons.append(
@@ -184,7 +189,9 @@ def mt940_processor_worker(statement_id: str):
 
             # Start processing reversal transactions - rd
             for parsed_transaction in parsed_transactions_rd:
-                bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
+                bank_disbursement_batch_id = get_bank_batch_id(
+                    parsed_transaction, session
+                )
 
                 if not bank_disbursement_batch_id:
                     disbursement_error_recons.append(
@@ -254,8 +261,7 @@ def get_disbursement_recon(parsed_transaction, session):
     disbursement_recon = (
         session.query(DisbursementRecon)
         .filter(
-            DisbursementRecon.disbursement_id
-            == parsed_transaction["disbursement_id"]
+            DisbursementRecon.disbursement_id == parsed_transaction["disbursement_id"]
         )
         .first()
     )

@@ -73,4 +73,5 @@ def block_funds_with_bank_beat_producer():
                 args=(envelope.disbursement_envelope_id,),
                 queue="g2p_bridge_celery_worker_tasks",
             )
+
         _logger.info("Completed checking for envelopes to block funds with bank")
