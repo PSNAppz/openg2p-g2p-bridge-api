@@ -22,12 +22,6 @@ class Settings(BaseSettings):
 
     mapper_resolve_api_url: str = ""
 
-    mapper_resolve_attempts: int = 3
-    funds_available_check_attempts: int = 3
-    funds_blocked_attempts: int = 3
-    funds_disbursement_attempts: int = 3
-    statement_process_attempts: int = 3
-
     bank_fa_deconstruct_strategy: str = ""
     mobile_wallet_deconstruct_strategy: str = ""
     email_wallet_deconstruct_strategy: str = ""

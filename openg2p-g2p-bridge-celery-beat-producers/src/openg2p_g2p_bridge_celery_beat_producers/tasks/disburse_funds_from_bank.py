@@ -48,7 +48,6 @@ def disburse_funds_from_bank_beat_producer():
             .scalars()
             .all()
         )
-
         for envelope in envelopes:
             pending_batches = (
                 session.execute(
