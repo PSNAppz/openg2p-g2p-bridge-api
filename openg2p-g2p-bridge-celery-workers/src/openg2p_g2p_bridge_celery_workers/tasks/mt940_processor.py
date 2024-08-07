@@ -110,86 +110,107 @@ def mt940_processor_worker(statement_id: str):
             )
 
             # Parsing transactions
-            parsed_transactions = []
+            parsed_transactions_d = []
+            parsed_transactions_rd = []
             entry_sequence = 0
             for transaction in mt940_statement:
                 entry_sequence += 1
                 debit_credit_indicator = transaction.data["status"]
 
-                if debit_credit_indicator in ["D", "RD"]:
+                if debit_credit_indicator in ["D"]:
                     parsed_transaction = construct_parsed_transaction(
                         bank_connector,
                         debit_credit_indicator,
                         entry_sequence,
                         transaction,
                     )
-                    parsed_transactions.append(parsed_transaction)
+                    parsed_transactions_d.append(parsed_transaction)
+
+                if debit_credit_indicator in ["RD"]:
+                    parsed_transaction = construct_parsed_transaction(
+                        bank_connector,
+                        debit_credit_indicator,
+                        entry_sequence,
+                        transaction,
+                    )
+                    parsed_transactions_rd.append(parsed_transaction)
 
             # End of for loop of mt940 statement transactions
             disbursement_error_recons = []
             disbursement_recons = []
-            for parsed_transaction in parsed_transactions:
-                bank_disbursement_batch_id = (
-                    session.query(DisbursementBatchControl)
-                    .filter(
-                        DisbursementBatchControl.disbursement_id
-                        == parsed_transaction["disbursement_id"]
-                    )
-                    .first()
-                    .bank_disbursement_batch_id
-                )
+
+            # Process only debit transactions
+            for parsed_transaction in parsed_transactions_d:
+                bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
 
                 if not bank_disbursement_batch_id:
                     disbursement_error_recons.append(
                         construct_disbursement_error_recon(
+                            statement_id,
+                            account_statement.statement_number,
+                            account_statement.sequence_number,
                             parsed_transaction,
                             G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
                         )
                     )
                     continue
 
-                disbursement_recon = (
-                    session.query(DisbursementRecon)
-                    .filter(
-                        DisbursementRecon.disbursement_id
-                        == parsed_transaction["disbursement_id"]
-                    )
-                    .first()
-                )
+                disbursement_recon = get_disbursement_recon(parsed_transaction, session)
 
-                if (
-                    disbursement_recon
-                    and parsed_transaction["debit_credit_indicator"] == "D"
-                ):
+                if disbursement_recon:
                     disbursement_error_recons.append(
                         construct_disbursement_error_recon(
+                            statement_id,
+                            account_statement.statement_number,
+                            account_statement.sequence_number,
                             parsed_transaction,
                             G2PBridgeErrorCodes.DUPLICATE_DISBURSEMENT,
                         )
                     )
                     continue
 
-                if (
-                    not disbursement_recon
-                    and parsed_transaction["debit_credit_indicator"] == "RD"
-                ):
+                disbursement_recon = construct_new_disbursement_recon(
+                    bank_disbursement_batch_id,
+                    parsed_transaction,
+                    statement_id,
+                    account_statement.statement_number,
+                    account_statement.sequence_number,
+                )
+                disbursement_recons.append(disbursement_recon)
+
+            # End of for loop for parsed transactions - debit
+            session.add_all(disbursement_recons)
+            session.add_all(disbursement_error_recons)
+
+            # Start processing reversal transactions - rd
+            for parsed_transaction in parsed_transactions_rd:
+                bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
+
+                if not bank_disbursement_batch_id:
                     disbursement_error_recons.append(
                         construct_disbursement_error_recon(
-                            parsed_transaction, G2PBridgeErrorCodes.INVALID_REVERSAL
+                            statement_id,
+                            account_statement.statement_number,
+                            account_statement.sequence_number,
+                            parsed_transaction,
+                            G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
                         )
                     )
                     continue
 
-                if parsed_transaction["debit_credit_indicator"] == "D":
-                    disbursement_recon = construct_new_disbursement_recon(
-                        bank_disbursement_batch_id,
-                        parsed_transaction,
-                        statement_id,
-                        account_statement.statement_number,
-                        account_statement.sequence_number,
+                disbursement_recon = get_disbursement_recon(parsed_transaction, session)
+
+                if not disbursement_recon:
+                    disbursement_error_recons.append(
+                        construct_disbursement_error_recon(
+                            statement_id,
+                            account_statement.statement_number,
+                            account_statement.sequence_number,
+                            parsed_transaction,
+                            G2PBridgeErrorCodes.INVALID_REVERSAL,
+                        )
                     )
-                    disbursement_recons.append(disbursement_recon)
-                elif parsed_transaction["debit_credit_indicator"] == "RD":
+                else:
                     update_existing_disbursement_recon(
                         disbursement_recon,
                         parsed_transaction,
@@ -199,7 +220,9 @@ def mt940_processor_worker(statement_id: str):
                     )
                     disbursement_recons.append(disbursement_recon)
 
-            # End of for loop for parsed transactions
+            # End of for loop for parsed transactions - rd
+            session.add_all(disbursement_recons)
+            session.add_all(disbursement_error_recons)
 
             # Update account statement with parsed data
             account_statement.statement_process_status = ProcessStatus.PROCESSED
@@ -208,8 +231,7 @@ def mt940_processor_worker(statement_id: str):
             account_statement.statement_process_attempts += 1
 
             session.add(account_statement)
-            session.add_all(disbursement_recons)
-            session.add_all(disbursement_error_recons)
+
             session.commit()
             _logger.info(
                 f"Processed account statement for account number: {account_statement.account_number}"
@@ -225,19 +247,51 @@ def mt940_processor_worker(statement_id: str):
             account_statement.statement_process_timestamp = datetime.utcnow()
             account_statement.statement_process_attempts += 1
             session.commit()
+            raise e
 
 
-def construct_disbursement_error_recon(parsed_transaction, g2p_bridge_error_code):
+def get_disbursement_recon(parsed_transaction, session):
+    disbursement_recon = (
+        session.query(DisbursementRecon)
+        .filter(
+            DisbursementRecon.disbursement_id
+            == parsed_transaction["disbursement_id"]
+        )
+        .first()
+    )
+    return disbursement_recon
+
+
+def get_bank_batch_id(parsed_transaction, session):
+    bank_disbursement_batch_id = (
+        session.query(DisbursementBatchControl)
+        .filter(
+            DisbursementBatchControl.disbursement_id
+            == parsed_transaction["disbursement_id"]
+        )
+        .first()
+        .bank_disbursement_batch_id
+    )
+    return bank_disbursement_batch_id
+
+
+def construct_disbursement_error_recon(
+    statement_id,
+    statement_number,
+    statement_sequence,
+    parsed_transaction,
+    g2p_bridge_error_code,
+):
     return DisbursementErrorRecon(
-        disbursement_id="",
-        bank_reference_number=parsed_transaction["remittance_reference_number"],
-        statement_id=parsed_transaction["remittance_statement_number"],
-        statement_number=parsed_transaction["remittance_statement_number"],
-        statement_sequence=parsed_transaction["remittance_statement_sequence"],
+        statement_id=statement_id,
+        statement_number=statement_number,
+        statement_sequence=statement_sequence,
         entry_sequence=parsed_transaction["remittance_entry_sequence"],
         entry_date=parsed_transaction["remittance_entry_date"],
         value_date=parsed_transaction["remittance_value_date"],
         error_reason=g2p_bridge_error_code,
+        disbursement_id=parsed_transaction["disbursement_id"],
+        bank_reference_number=parsed_transaction["remittance_reference_number"],
         active=True,
     )
 
