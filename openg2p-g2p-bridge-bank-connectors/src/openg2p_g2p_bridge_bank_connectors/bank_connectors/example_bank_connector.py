@@ -143,7 +143,7 @@ class ExampleBankConnector(BankConnectorInterface):
                     )
                     bank_payment_payloads.append(bank_payment_payload.model_dump())
 
-                request_data = {"initiate_payment_payloads": bank_payment_payloads}
+                request_data = bank_payment_payloads
 
                 response = client.post(
                     _config.funds_disbursement_url_example_bank, json=request_data
@@ -165,7 +165,7 @@ class ExampleBankConnector(BankConnectorInterface):
         return customer_reference
 
     def retrieve_beneficiary_name(self, narratives: str) -> str:
-        return narratives[0]
+        return narratives[3]
 
     def retrieve_reversal_reason(self, narratives: str) -> str:
-        return narratives[1]
+        return narratives[5]
