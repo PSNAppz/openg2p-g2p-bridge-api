@@ -110,6 +110,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
 
             payment_payloads.append(
                 DisbursementPaymentPayload(
+                    disbursement_id=disbursement.disbursement_id,
                     remitting_account=benefit_program_configuration.sponsor_bank_account_number,
                     remitting_account_currency=benefit_program_configuration.sponsor_bank_account_currency,
                     payment_amount=disbursement.disbursement_amount,
