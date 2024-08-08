@@ -1,5 +1,5 @@
-from typing import List, Optional
 import logging
+from typing import List, Optional
 
 import httpx
 from openg2p_g2p_bridge_models.models import (
@@ -20,6 +20,7 @@ from ..config import Settings
 
 _config = Settings.get_config()
 _logger = logging.getLogger(_config.logging_default_logger_name)
+
 
 class BankPaymentPayload(BaseModel):
     payment_reference_number: str
@@ -137,7 +138,9 @@ class ExampleBankConnector(BankConnectorInterface):
     def initiate_payment(
         self, disbursement_payment_payloads: List[DisbursementPaymentPayload]
     ) -> PaymentResponse:
-        _logger.info(f"Initiating payment for {len(disbursement_payment_payloads)} disbursements")
+        _logger.info(
+            f"Initiating payment for {len(disbursement_payment_payloads)} disbursements"
+        )
         try:
             with httpx.Client() as client:
                 bank_payment_payloads = []
@@ -178,9 +181,9 @@ class ExampleBankConnector(BankConnectorInterface):
 
                 data = response.json()
                 if data["status"] == "success":
-                    _logger.info(f"Payment initiated successfully")
+                    _logger.info("Payment initiated successfully")
                     return PaymentResponse(status=PaymentStatus.SUCCESS, error_code="")
-                _logger.error(f"Payment initiation failed")
+                _logger.error("Payment initiation failed")
                 return PaymentResponse(
                     status=PaymentStatus.ERROR, error_code=data.get("error_message", "")
                 )
@@ -191,10 +194,15 @@ class ExampleBankConnector(BankConnectorInterface):
     def retrieve_disbursement_id(
         self, bank_reference: str, customer_reference: str, narratives: str
     ) -> str:
+        _logger.info(
+            f"Retrieving disbursement id for bank_reference: {bank_reference}, customer_reference: {customer_reference}"
+        )
         return customer_reference
 
     def retrieve_beneficiary_name(self, narratives: str) -> str:
+        _logger.info(f"Retrieving beneficiary name from narratives: {narratives}")
         return narratives[3]
 
     def retrieve_reversal_reason(self, narratives: str) -> str:
-        return narratives[5]
+        _logger.info(f"Retrieving reversal reason from narratives: {narratives}")
+        return narratives[-1]

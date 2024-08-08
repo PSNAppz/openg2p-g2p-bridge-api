@@ -1,9 +1,9 @@
 import enum
+import logging
 import re
 import uuid
 from datetime import datetime
 from typing import List
-import logging
 
 from openg2p_fastapi_common.service import BaseService
 from openg2p_g2p_bridge_models.models import MapperResolvedFaType
@@ -19,6 +19,7 @@ from ..config import Settings
 
 _config = Settings.get_config()
 _logger = logging.getLogger(_config.logging_default_logger_name)
+
 
 class FAKeys(enum.Enum):
     account_number = "account_number"
@@ -52,7 +53,9 @@ class ResolveHelper(BaseService):
     def construct_resolve_request(
         self, single_resolve_requests: List[SingleResolveRequest]
     ) -> ResolveRequest:
-        _logger.info(f"Constructing resolve request for {len(single_resolve_requests)} single resolve requests")
+        _logger.info(
+            f"Constructing resolve request for {len(single_resolve_requests)} single resolve requests"
+        )
         resolve_request_message = ResolveRequestMessage(
             transaction_id=str(uuid.uuid4()),
             resolve_request=single_resolve_requests,
@@ -70,7 +73,9 @@ class ResolveHelper(BaseService):
             ),
             message=resolve_request_message,
         )
-        _logger.info(f"Constructed resolve request for {len(single_resolve_requests)} single resolve requests")
+        _logger.info(
+            f"Constructed resolve request for {len(single_resolve_requests)} single resolve requests"
+        )
         return resolve_request
 
     def _deconstruct(self, value: str, strategy: str) -> List[KeyValuePair]:

@@ -1,11 +1,10 @@
 import datetime
 from typing import Optional
 
+from openg2p_g2pconnect_common_lib.schemas import Request, SyncResponse
 from pydantic import BaseModel
 
 from ..models import DisbursementFrequency
-from .request import BridgeRequest
-from .response import BridgeResponse
 
 
 class DisbursementEnvelopePayload(BaseModel):
@@ -21,9 +20,9 @@ class DisbursementEnvelopePayload(BaseModel):
     disbursement_schedule_date: Optional[datetime.date] = None
 
 
-class DisbursementEnvelopeRequest(BridgeRequest):
-    request_payload: DisbursementEnvelopePayload
+class DisbursementEnvelopeRequest(Request):
+    message: DisbursementEnvelopePayload
 
 
-class DisbursementEnvelopeResponse(BridgeResponse):
-    response_payload: Optional[DisbursementEnvelopePayload] = None
+class DisbursementEnvelopeResponse(SyncResponse):
+    message: Optional[DisbursementEnvelopePayload] = None

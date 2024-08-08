@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import List
 
 import mt940
 from openg2p_g2p_bridge_bank_connectors.bank_connectors import BankConnectorFactory
@@ -11,7 +12,9 @@ from openg2p_g2p_bridge_models.models import (
     AccountStatement,
     AccountStatementLob,
     BenefitProgramConfiguration,
+    Disbursement,
     DisbursementBatchControl,
+    DisbursementEnvelopeBatchStatus,
     DisbursementErrorRecon,
     DisbursementRecon,
     ProcessStatus,
@@ -126,6 +129,7 @@ def mt940_processor_worker(statement_id: str):
                         debit_credit_indicator,
                         entry_sequence,
                         transaction,
+                        session,
                     )
                     parsed_transactions_d.append(parsed_transaction)
 
@@ -135,100 +139,43 @@ def mt940_processor_worker(statement_id: str):
                         debit_credit_indicator,
                         entry_sequence,
                         transaction,
+                        session,
                     )
                     parsed_transactions_rd.append(parsed_transaction)
 
             # End of for loop of mt940 statement transactions
             disbursement_error_recons = []
-            disbursement_recons = []
+            disbursement_recons_d = []
 
             # Process only debit transactions
-            for parsed_transaction in parsed_transactions_d:
-                bank_disbursement_batch_id = get_bank_batch_id(
-                    parsed_transaction, session
-                )
+            process_debit_transactions(
+                account_statement,
+                disbursement_error_recons,
+                disbursement_recons_d,
+                parsed_transactions_d,
+                session,
+                statement_id,
+            )
 
-                if not bank_disbursement_batch_id:
-                    disbursement_error_recons.append(
-                        construct_disbursement_error_recon(
-                            statement_id,
-                            account_statement.statement_number,
-                            account_statement.sequence_number,
-                            parsed_transaction,
-                            G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
-                        )
-                    )
-                    continue
-
-                disbursement_recon = get_disbursement_recon(parsed_transaction, session)
-
-                if disbursement_recon:
-                    disbursement_error_recons.append(
-                        construct_disbursement_error_recon(
-                            statement_id,
-                            account_statement.statement_number,
-                            account_statement.sequence_number,
-                            parsed_transaction,
-                            G2PBridgeErrorCodes.DUPLICATE_DISBURSEMENT,
-                        )
-                    )
-                    continue
-
-                disbursement_recon = construct_new_disbursement_recon(
-                    bank_disbursement_batch_id,
-                    parsed_transaction,
-                    statement_id,
-                    account_statement.statement_number,
-                    account_statement.sequence_number,
-                )
-                disbursement_recons.append(disbursement_recon)
-
-            # End of for loop for parsed transactions - debit
-            session.add_all(disbursement_recons)
-            session.add_all(disbursement_error_recons)
+            # Add disbursement_recons_d to session before processing reversal transactions
+            session.add_all(disbursement_recons_d)
 
             # Start processing reversal transactions - rd
-            for parsed_transaction in parsed_transactions_rd:
-                bank_disbursement_batch_id = get_bank_batch_id(
-                    parsed_transaction, session
-                )
+            disbursement_recons_rd = []
+            process_reversal_of_debits(
+                account_statement,
+                disbursement_error_recons,
+                disbursement_recons_rd,
+                parsed_transactions_rd,
+                session,
+                statement_id,
+            )
 
-                if not bank_disbursement_batch_id:
-                    disbursement_error_recons.append(
-                        construct_disbursement_error_recon(
-                            statement_id,
-                            account_statement.statement_number,
-                            account_statement.sequence_number,
-                            parsed_transaction,
-                            G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
-                        )
-                    )
-                    continue
+            session.add_all(disbursement_recons_rd)
 
-                disbursement_recon = get_disbursement_recon(parsed_transaction, session)
+            update_envelope_batch_status_reconciled(disbursement_recons_d, session)
+            update_envelope_batch_status_reversed(disbursement_recons_rd, session)
 
-                if not disbursement_recon:
-                    disbursement_error_recons.append(
-                        construct_disbursement_error_recon(
-                            statement_id,
-                            account_statement.statement_number,
-                            account_statement.sequence_number,
-                            parsed_transaction,
-                            G2PBridgeErrorCodes.INVALID_REVERSAL,
-                        )
-                    )
-                else:
-                    update_existing_disbursement_recon(
-                        disbursement_recon,
-                        parsed_transaction,
-                        statement_id,
-                        account_statement.statement_number,
-                        account_statement.sequence_number,
-                    )
-                    disbursement_recons.append(disbursement_recon)
-
-            # End of for loop for parsed transactions - rd
-            session.add_all(disbursement_recons)
             session.add_all(disbursement_error_recons)
 
             # Update account statement with parsed data
@@ -255,6 +202,99 @@ def mt940_processor_worker(statement_id: str):
             account_statement.statement_process_attempts += 1
             session.commit()
             raise e
+
+
+def process_reversal_of_debits(
+    account_statement,
+    disbursement_error_recons,
+    disbursement_recons_rd,
+    parsed_transactions_rd,
+    session,
+    statement_id,
+):
+    for parsed_transaction in parsed_transactions_rd:
+        bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
+
+        if not bank_disbursement_batch_id:
+            disbursement_error_recons.append(
+                construct_disbursement_error_recon(
+                    statement_id,
+                    account_statement.statement_number,
+                    account_statement.sequence_number,
+                    parsed_transaction,
+                    G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
+                )
+            )
+            continue
+
+        disbursement_recon = get_disbursement_recon(parsed_transaction, session)
+
+        if not disbursement_recon:
+            disbursement_error_recons.append(
+                construct_disbursement_error_recon(
+                    statement_id,
+                    account_statement.statement_number,
+                    account_statement.sequence_number,
+                    parsed_transaction,
+                    G2PBridgeErrorCodes.INVALID_REVERSAL,
+                )
+            )
+        else:
+            update_existing_disbursement_recon(
+                disbursement_recon,
+                parsed_transaction,
+                statement_id,
+                account_statement.statement_number,
+                account_statement.sequence_number,
+            )
+            disbursement_recons_rd.append(disbursement_recon)
+
+
+def process_debit_transactions(
+    account_statement,
+    disbursement_error_recons,
+    disbursement_recons_d,
+    parsed_transactions_d,
+    session,
+    statement_id,
+):
+    for parsed_transaction in parsed_transactions_d:
+        bank_disbursement_batch_id = get_bank_batch_id(parsed_transaction, session)
+
+        if not bank_disbursement_batch_id:
+            disbursement_error_recons.append(
+                construct_disbursement_error_recon(
+                    statement_id,
+                    account_statement.statement_number,
+                    account_statement.sequence_number,
+                    parsed_transaction,
+                    G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ID,
+                )
+            )
+            continue
+
+        disbursement_recon = get_disbursement_recon(parsed_transaction, session)
+
+        if disbursement_recon:
+            disbursement_error_recons.append(
+                construct_disbursement_error_recon(
+                    statement_id,
+                    account_statement.statement_number,
+                    account_statement.sequence_number,
+                    parsed_transaction,
+                    G2PBridgeErrorCodes.DUPLICATE_DISBURSEMENT,
+                )
+            )
+            continue
+
+        disbursement_recon = construct_new_disbursement_recon(
+            bank_disbursement_batch_id,
+            parsed_transaction,
+            statement_id,
+            account_statement.statement_number,
+            account_statement.sequence_number,
+        )
+        disbursement_recons_d.append(disbursement_recon)
 
 
 def get_disbursement_recon(parsed_transaction, session):
@@ -331,6 +371,7 @@ def construct_new_disbursement_recon(
     disbursement_recon = DisbursementRecon(
         bank_disbursement_batch_id=bank_disbursement_batch_id,
         disbursement_id=parsed_transaction["disbursement_id"],
+        disbursement_envelope_id=parsed_transaction["disbursement_envelope_id"],
         beneficiary_name_from_bank=parsed_transaction["beneficiary_name_from_bank"],
         remittance_reference_number=parsed_transaction["remittance_reference_number"],
         remittance_statement_id=statement_id,
@@ -345,10 +386,7 @@ def construct_new_disbursement_recon(
 
 
 def construct_parsed_transaction(
-    bank_connector,
-    debit_credit_indicator,
-    entry_sequence,
-    transaction,
+    bank_connector, debit_credit_indicator, entry_sequence, transaction, session
 ) -> dict:
     parsed_transaction = {}
     transaction_amount = transaction.data["amount"].amount
@@ -358,6 +396,7 @@ def construct_parsed_transaction(
     disbursement_id = bank_connector.retrieve_disbursement_id(
         remittance_reference_number, customer_reference, narratives
     )
+    disbursement_envelope_id = get_disbursement_envelope_id(disbursement_id, session)
     beneficiary_name_from_bank = None
     remittance_entry_sequence = None
     remittance_entry_date = None
@@ -388,6 +427,7 @@ def construct_parsed_transaction(
     parsed_transaction.update(
         {
             "disbursement_id": disbursement_id,
+            "disbursement_envelope_id": disbursement_envelope_id,
             "transaction_amount": transaction_amount,
             "debit_credit_indicator": debit_credit_indicator,
             "beneficiary_name_from_bank": beneficiary_name_from_bank,
@@ -403,3 +443,80 @@ def construct_parsed_transaction(
         }
     )
     return parsed_transaction
+
+
+def get_disbursement_envelope_id(disbursement_id, session):
+    disbursement = (
+        session.query(Disbursement)
+        .filter(Disbursement.disbursement_id == disbursement_id)
+        .first()
+    )
+
+    return disbursement.disbursement_envelope_id
+
+
+def update_envelope_batch_status_reconciled(
+    disbursement_recons: List[DisbursementRecon], session
+):
+    # Get the unique disbursement envelope ids and count of disbursements
+    disbursement_envelope_id_count = {}
+    for disbursement_recon in disbursement_recons:
+        if (
+            disbursement_recon.disbursement_envelope_id
+            in disbursement_envelope_id_count
+        ):
+            disbursement_envelope_id_count[
+                disbursement_recon.disbursement_envelope_id
+            ] += 1
+        else:
+            disbursement_envelope_id_count[
+                disbursement_recon.disbursement_envelope_id
+            ] = 1
+
+    # Update the disbursement envelope batch status
+    for disbursement_envelope_id, count in disbursement_envelope_id_count.items():
+        disbursement_envelope_batch_status = (
+            session.query(DisbursementEnvelopeBatchStatus)
+            .filter(
+                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                == disbursement_envelope_id
+            )
+            .first()
+        )
+        disbursement_envelope_batch_status.number_of_disbursements_reconciled += count
+        session.add(disbursement_envelope_batch_status)
+
+
+def update_envelope_batch_status_reversed(
+    disbursement_recons: List[DisbursementRecon], session
+):
+    # Get the unique disbursement envelope ids and count of disbursements
+    disbursement_envelope_id_count = {}
+    for disbursement_recon in disbursement_recons:
+        if (
+            disbursement_recon.disbursement_envelope_id
+            in disbursement_envelope_id_count
+        ):
+            disbursement_envelope_id_count[
+                disbursement_recon.disbursement_envelope_id
+            ] += 1
+        else:
+            disbursement_envelope_id_count[
+                disbursement_recon.disbursement_envelope_id
+            ] = 1
+
+    # Update the disbursement envelope batch status
+    for disbursement_envelope_id, count in disbursement_envelope_id_count.items():
+        _logger.info(
+            f"Disbursement envelope id: {disbursement_envelope_id}, count: {count}"
+        )
+        disbursement_envelope_batch_status = (
+            session.query(DisbursementEnvelopeBatchStatus)
+            .filter(
+                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                == disbursement_envelope_id
+            )
+            .first()
+        )
+        disbursement_envelope_batch_status.number_of_disbursements_reversed += count
+        session.add(disbursement_envelope_batch_status)

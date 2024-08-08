@@ -26,13 +26,13 @@ class DisbursementController(BaseController):
         self.router.add_api_route(
             "/create_disbursements",
             self.create_disbursements,
-            responses={200: {"model": DisbursementRequest}},
+            responses={200: {"model": DisbursementResponse}},
             methods=["POST"],
         )
         self.router.add_api_route(
             "/cancel_disbursements",
             self.cancel_disbursements,
-            responses={200: {"model": DisbursementRequest}},
+            responses={200: {"model": DisbursementResponse}},
             methods=["POST"],
         )
 
@@ -50,14 +50,14 @@ class DisbursementController(BaseController):
             _logger.error("Error creating disbursements")
             error_response: DisbursementResponse = (
                 await self.disbursement_service.construct_disbursement_error_response(
-                    e.code, e.disbursement_payloads
+                    disbursement_request, e.code, e.disbursement_payloads
                 )
             )
             return error_response
 
         disbursement_response: DisbursementResponse = (
             await self.disbursement_service.construct_disbursement_success_response(
-                disbursement_payloads
+                disbursement_request, disbursement_payloads
             )
         )
         _logger.info("Disbursements created successfully")
@@ -78,14 +78,14 @@ class DisbursementController(BaseController):
             _logger.error("Error cancelling disbursements")
             error_response: DisbursementResponse = (
                 await self.disbursement_service.construct_disbursement_error_response(
-                    e.code, e.disbursement_payloads
+                    disbursement_request, e.code, e.disbursement_payloads
                 )
             )
             return error_response
 
         disbursement_response: DisbursementResponse = (
             await self.disbursement_service.construct_disbursement_success_response(
-                disbursement_payloads
+                disbursement_request, disbursement_payloads
             )
         )
         _logger.info("Disbursements cancelled successfully")

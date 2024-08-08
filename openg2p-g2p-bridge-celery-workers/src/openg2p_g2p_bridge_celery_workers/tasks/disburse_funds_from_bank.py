@@ -169,6 +169,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
             if payment_response.status == PaymentStatus.SUCCESS:
                 batch_status.disbursement_status = ProcessStatus.PROCESSED.value
                 batch_status.latest_error_code = None
+                envelope_batch_status.number_of_disbursements_shipped += len(
+                    payment_payloads
+                )
             else:
                 batch_status.disbursement_status = ProcessStatus.PENDING.value
                 batch_status.latest_error_code = payment_response.error_code
@@ -183,5 +186,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
             batch_status.latest_error_code = str(e)
             batch_status.disbursement_attempts += 1
 
-        _logger.info(f"Disbursing funds with bank for batch: {bank_disbursement_batch_id} completed")
+        _logger.info(
+            f"Disbursing funds with bank for batch: {bank_disbursement_batch_id} completed"
+        )
         session.commit()

@@ -19,7 +19,10 @@ from openg2p_g2p_bridge_models.schemas import (
     DisbursementEnvelopePayload,
     DisbursementEnvelopeRequest,
     DisbursementEnvelopeResponse,
-    ResponseStatus,
+)
+from openg2p_g2pconnect_common_lib.schemas import (
+    StatusEnum,
+    SyncResponseHeader,
 )
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.future import select
@@ -42,8 +45,10 @@ class DisbursementEnvelopeService(BaseService):
             except DisbursementEnvelopeException as e:
                 raise e
 
-            disbursement_envelope: DisbursementEnvelope = await self.construct_disbursement_envelope(
-                disbursement_envelope_payload=disbursement_envelope_request.request_payload
+            disbursement_envelope: DisbursementEnvelope = (
+                await self.construct_disbursement_envelope(
+                    disbursement_envelope_payload=disbursement_envelope_request.message
+                )
             )
 
             disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = (
@@ -58,7 +63,7 @@ class DisbursementEnvelopeService(BaseService):
             await session.commit()
 
             disbursement_envelope_payload: DisbursementEnvelopePayload = (
-                disbursement_envelope_request.request_payload
+                disbursement_envelope_request.message
             )
             disbursement_envelope_payload.disbursement_envelope_id = (
                 disbursement_envelope.disbursement_envelope_id
@@ -73,7 +78,7 @@ class DisbursementEnvelopeService(BaseService):
         session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
         async with session_maker() as session:
             disbursement_envelope_payload: DisbursementEnvelopePayload = (
-                disbursement_envelope_request.request_payload
+                disbursement_envelope_request.message
             )
             disbursement_envelope_id: str = (
                 disbursement_envelope_payload.disbursement_envelope_id
@@ -117,26 +122,41 @@ class DisbursementEnvelopeService(BaseService):
             return disbursement_envelope_payload
 
     async def construct_disbursement_envelope_success_response(
-        self, disbursement_envelope_payload: DisbursementEnvelopePayload
+        self,
+        disbursement_envelope_request: DisbursementEnvelopeRequest,
+        disbursement_envelope_payload: DisbursementEnvelopePayload,
     ) -> DisbursementEnvelopeResponse:
         _logger.info("Constructing disbursement envelope success response")
         disbursement_envelope_response: DisbursementEnvelopeResponse = (
             DisbursementEnvelopeResponse(
-                response_status=ResponseStatus.SUCCESS,
-                response_payload=disbursement_envelope_payload,
+                header=SyncResponseHeader(
+                    message_id=disbursement_envelope_request.header.message_id,
+                    message_ts=datetime.now().isoformat(),
+                    action=disbursement_envelope_request.header.action,
+                    status=StatusEnum.succ,
+                ),
+                message=disbursement_envelope_payload,
             )
         )
         _logger.info("Disbursement envelope success response constructed")
         return disbursement_envelope_response
 
     async def construct_disbursement_envelope_error_response(
-        self, error_code: G2PBridgeErrorCodes
+        self,
+        disbursement_envelope_request: DisbursementEnvelopeRequest,
+        error_code: G2PBridgeErrorCodes,
     ) -> DisbursementEnvelopeResponse:
         _logger.error("Constructing disbursement envelope error response")
         disbursement_envelope_response: DisbursementEnvelopeResponse = (
             DisbursementEnvelopeResponse(
-                response_status=ResponseStatus.FAILURE,
-                response_error_code=error_code.value,
+                header=SyncResponseHeader(
+                    message_id=disbursement_envelope_request.header.message_id,
+                    message_ts=datetime.now().isoformat(),
+                    action=disbursement_envelope_request.header.action,
+                    status=StatusEnum.rjct,
+                    status_reason_message=error_code.value,
+                ),
+                message={},
             )
         )
         _logger.error("Disbursement envelope error response constructed")
@@ -148,7 +168,7 @@ class DisbursementEnvelopeService(BaseService):
     ) -> bool:
         _logger.info("Validating disbursement envelope request")
         disbursement_envelope_payload: DisbursementEnvelopePayload = (
-            disbursement_envelope_request.request_payload
+            disbursement_envelope_request.message
         )
         if (
             disbursement_envelope_payload.benefit_program_mnemonic is None
