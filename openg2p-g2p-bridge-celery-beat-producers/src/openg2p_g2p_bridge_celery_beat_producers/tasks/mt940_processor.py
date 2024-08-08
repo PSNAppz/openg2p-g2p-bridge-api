@@ -17,6 +17,7 @@ _engine = get_engine()
 
 @celery_app.task(name="mt940_processor_beat_producer")
 def mt940_processor_beat_producer():
+    _logger.info("Running mt940_processor_beat_producer")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
     with session_maker() as session:
         account_statements = (
@@ -35,8 +36,13 @@ def mt940_processor_beat_producer():
         )
 
         for statement in account_statements:
+            _logger.info(
+                f"Sending mt940_processor_worker task for statement_id: {statement.statement_id}"
+            )
             celery_app.send_task(
                 "mt940_processor_worker",
                 args=[statement.statement_id],
                 queue="g2p_bridge_celery_worker_tasks",
             )
+
+        _logger.info("Finished mt940_processor_beat_producer")

@@ -39,7 +39,7 @@ class AccountStatementService(BaseService):
 
             statement_lob = AccountStatementLob(
                 statement_id=statement_id,
-                statement_lob=str(statement_file),
+                statement_lob=str(statement_file.decode("utf-8")),
                 active=True,
             )
             session.add(statement_lob)

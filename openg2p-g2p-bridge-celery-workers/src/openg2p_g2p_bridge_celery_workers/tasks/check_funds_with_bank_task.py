@@ -22,6 +22,7 @@ _engine = get_engine()
 
 @celery_app.task(name="check_funds_with_bank_worker")
 def check_funds_with_bank_worker(disbursement_envelope_id: str):
+    _logger.info(f"Checking funds with bank for envelope: {disbursement_envelope_id}")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with session_maker() as session:
@@ -102,5 +103,7 @@ def check_funds_with_bank_worker(disbursement_envelope_id: str):
                 e
             )
             disbursement_envelope_batch_status.funds_available_attempts += 1
-
+        _logger.info(
+            f"Checked funds with bank for envelope: {disbursement_envelope_id}"
+        )
         session.commit()

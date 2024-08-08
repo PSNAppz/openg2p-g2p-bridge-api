@@ -24,6 +24,7 @@ _engine = get_engine()
 
 @celery_app.task(name="mapper_resolution_worker")
 def mapper_resolution_worker(mapper_resolution_batch_id: str):
+    _logger.info(f"Resolving the mapper resolution batch: {mapper_resolution_batch_id}")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with session_maker() as session:
@@ -52,6 +53,7 @@ def mapper_resolution_worker(mapper_resolution_batch_id: str):
             loop.close()
 
         if not resolve_response:
+            _logger.error(f"Failed to resolve the request: {error_msg}")
             session.query(MapperResolutionBatchStatus).filter(
                 MapperResolutionBatchStatus.mapper_resolution_batch_id
                 == mapper_resolution_batch_id
@@ -72,6 +74,7 @@ def mapper_resolution_worker(mapper_resolution_batch_id: str):
 
 
 async def make_resolve_request(disbursement_batch_controls):
+    _logger.info("Making resolve request")
     resolve_helper = ResolveHelper.get_component()
 
     single_resolve_requests = [
@@ -88,6 +91,7 @@ async def make_resolve_request(disbursement_batch_controls):
         )
         return resolve_response, None
     except Exception as e:
+        _logger.error(f"Failed to resolve the request: {e}")
         error_msg = f"Failed to resolve the request: {e}"
         return None, error_msg
 
@@ -95,6 +99,7 @@ async def make_resolve_request(disbursement_batch_controls):
 def process_and_store_resolution(
     mapper_resolution_batch_id, resolve_response, beneficiary_disbursement_map
 ):
+    _logger.info("Processing and storing resolution")
     resolve_helper = ResolveHelper.get_component()
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
     with session_maker() as session:
@@ -157,4 +162,5 @@ def process_and_store_resolution(
                 + 1,
             }
         )
+        _logger.info("Stored the resolution")
         session.commit()

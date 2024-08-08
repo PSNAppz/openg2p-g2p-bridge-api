@@ -141,7 +141,7 @@ class DisbursementService(BaseService):
         disbursements: List[Disbursement] = []
         for disbursement_payload in disbursement_payloads:
             disbursement = Disbursement(
-                disbursement_id=str(int(time.time() * 1000)),
+                disbursement_id=str(int(time.time() * 1000000)),
                 disbursement_envelope_id=str(
                     disbursement_payload.disbursement_envelope_id
                 ),

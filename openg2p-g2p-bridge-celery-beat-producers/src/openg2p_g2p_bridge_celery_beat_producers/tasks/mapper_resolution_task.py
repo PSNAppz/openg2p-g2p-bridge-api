@@ -17,8 +17,8 @@ _engine = get_engine()
 
 @celery_app.task(name="mapper_resolution_beat_producer")
 def mapper_resolution_beat_producer():
+    _logger.info("Running mapper_resolution_beat_producer")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
-
     with session_maker() as session:
         mapper_resolution_batch_statuses = (
             session.execute(
@@ -36,8 +36,13 @@ def mapper_resolution_beat_producer():
         )
 
         for mapper_resolution_batch_status in mapper_resolution_batch_statuses:
+            _logger.info(
+                f"Sending mapper_resolution_worker task for mapper_resolution_batch_id: {mapper_resolution_batch_status.mapper_resolution_batch_id}"
+            )
             celery_app.send_task(
                 "mapper_resolution_worker",
                 args=[mapper_resolution_batch_status.mapper_resolution_batch_id],
                 queue="g2p_bridge_celery_worker_tasks",
             )
+
+        _logger.info("Finished mapper_resolution_beat_producer")

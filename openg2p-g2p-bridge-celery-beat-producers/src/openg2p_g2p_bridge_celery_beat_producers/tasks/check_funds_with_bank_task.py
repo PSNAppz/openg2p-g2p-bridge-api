@@ -20,8 +20,8 @@ _engine = get_engine()
 
 @celery_app.task(name="check_funds_with_bank_beat_producer")
 def check_funds_with_bank_beat_producer():
+    _logger.info("Checking funds with bank")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
-
     with session_maker() as session:
         envelopes = (
             session.execute(
@@ -62,8 +62,13 @@ def check_funds_with_bank_beat_producer():
         )
 
         for envelope in envelopes:
+            _logger.info(
+                f"Sending task to check funds with bank for envelope {envelope.disbursement_envelope_id}"
+            )
             celery_app.send_task(
                 "check_funds_with_bank_worker",
                 args=(envelope.disbursement_envelope_id,),
                 queue="g2p_bridge_celery_worker_tasks",
             )
+
+        _logger.info("Checking funds with bank beat tasks push completed")

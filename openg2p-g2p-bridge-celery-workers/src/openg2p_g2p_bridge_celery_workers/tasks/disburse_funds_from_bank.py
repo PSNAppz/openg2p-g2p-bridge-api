@@ -29,6 +29,7 @@ _engine = get_engine()
 
 @celery_app.task(name="disburse_funds_from_bank_worker")
 def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
+    _logger.info(f"Disbursing funds with bank for batch: {bank_disbursement_batch_id}")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with session_maker() as session:
@@ -42,6 +43,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         )
 
         if not batch_status:
+            _logger.error(
+                f"Bank Disbursement Batch Status not found for batch: {bank_disbursement_batch_id}"
+            )
             return
 
         disbursement_envelope_id = batch_status.disbursement_envelope_id
@@ -55,6 +59,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         )
 
         if not envelope:
+            _logger.error(
+                f"Disbursement Envelope not found for envelope: {disbursement_envelope_id}"
+            )
             return
 
         envelope_batch_status = (
@@ -67,6 +74,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         )
 
         if not envelope_batch_status:
+            _logger.error(
+                f"Disbursement Envelope Batch Status not found for envelope: {disbursement_envelope_id}"
+            )
             return
 
         disbursement_batch_controls = (
@@ -110,6 +120,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
 
             payment_payloads.append(
                 DisbursementPaymentPayload(
+                    disbursement_id=disbursement.disbursement_id,
                     remitting_account=benefit_program_configuration.sponsor_bank_account_number,
                     remitting_account_currency=benefit_program_configuration.sponsor_bank_account_currency,
                     payment_amount=disbursement.disbursement_amount,
@@ -166,9 +177,11 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
             batch_status.disbursement_attempts += 1
 
         except Exception as e:
+            _logger.error(f"Error disbursing funds with bank: {str(e)}")
             batch_status.disbursement_status = ProcessStatus.PENDING.value
             batch_status.disbursement_timestamp = datetime.utcnow()
             batch_status.latest_error_code = str(e)
             batch_status.disbursement_attempts += 1
 
+        _logger.info(f"Disbursing funds with bank for batch: {bank_disbursement_batch_id} completed")
         session.commit()

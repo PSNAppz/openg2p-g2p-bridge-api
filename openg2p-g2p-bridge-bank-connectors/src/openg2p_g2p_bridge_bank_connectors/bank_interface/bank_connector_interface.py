@@ -60,10 +60,10 @@ class PaymentResponse(BaseModel):
 
 
 class BankConnectorInterface(BaseService):
-    def check_funds(self, account_no, currency, amount) -> CheckFundsResponse:
+    def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         raise NotImplementedError()
 
-    def block_funds(self, account_no, currency, amount) -> BlockFundsResponse:
+    def block_funds(self, account_number, currency, amount) -> BlockFundsResponse:
         raise NotImplementedError()
 
     def initiate_payment(

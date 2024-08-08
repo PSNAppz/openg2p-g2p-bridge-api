@@ -34,7 +34,7 @@ def get_engine():
 
 
 celery_app = Celery(
-    "g2p_bridge_celery_worker_tasks",
+    "g2p_bridge_celery_worker",
     broker="redis://localhost:6379/0",
     backend="redis://localhost:6379/0",
     include=["openg2p_g2p_bridge_celery_workers.tasks"],

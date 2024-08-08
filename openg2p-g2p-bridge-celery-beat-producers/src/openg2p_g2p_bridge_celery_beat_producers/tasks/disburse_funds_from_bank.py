@@ -22,6 +22,7 @@ _engine = get_engine()
 
 @celery_app.task(name="disburse_funds_from_bank_beat_producer")
 def disburse_funds_from_bank_beat_producer():
+    _logger.info("Running disburse_funds_from_bank_beat_producer")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
     with session_maker() as session:
         envelopes = (
@@ -48,7 +49,6 @@ def disburse_funds_from_bank_beat_producer():
             .scalars()
             .all()
         )
-
         for envelope in envelopes:
             pending_batches = (
                 session.execute(
@@ -68,8 +68,15 @@ def disburse_funds_from_bank_beat_producer():
             )
 
             for batch in pending_batches:
+                _logger.info(
+                    f"Sending task to disburse funds for batch {batch.bank_disbursement_batch_id}"
+                )
                 celery_app.send_task(
                     "disburse_funds_from_bank_worker",
                     (batch.bank_disbursement_batch_id,),
                     queue="g2p_bridge_celery_worker_tasks",
                 )
+
+            _logger.info(
+                f"Sent tasks to disburse funds for {len(pending_batches)} batches"
+            )
