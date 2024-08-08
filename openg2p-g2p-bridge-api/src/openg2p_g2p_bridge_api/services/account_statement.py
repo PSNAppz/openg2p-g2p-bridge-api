@@ -7,7 +7,8 @@ from openg2p_fastapi_common.context import dbengine
 from openg2p_fastapi_common.service import BaseService
 from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
 from openg2p_g2p_bridge_models.models import AccountStatement, AccountStatementLob
-from openg2p_g2p_bridge_models.schemas import AccountStatementResponse, ResponseStatus
+from openg2p_g2p_bridge_models.schemas import AccountStatementResponse
+from openg2p_g2pconnect_common_lib.schemas import StatusEnum, SyncResponseHeader
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from ..config import Settings
@@ -53,9 +54,13 @@ class AccountStatementService(BaseService):
     ) -> AccountStatementResponse:
         _logger.info("Constructing account statement success response")
         return AccountStatementResponse(
-            response_status=ResponseStatus.SUCCESS,
-            statement_id=statement_id,
-            error_code="",
+            header=SyncResponseHeader(
+                message_id="",
+                message_ts=datetime.now().isoformat(),
+                action="",
+                status=StatusEnum.succ,
+            ),
+            message=statement_id,
         )
 
     async def construct_account_statement_error_response(
@@ -63,7 +68,11 @@ class AccountStatementService(BaseService):
     ) -> AccountStatementResponse:
         _logger.error("Constructing account statement error response")
         return AccountStatementResponse(
-            response_status=ResponseStatus.FAILURE,
-            statement_id="",
-            error_code=code.value,
+            header=SyncResponseHeader(
+                message_id="",
+                message_ts=datetime.now().isoformat(),
+                action="",
+                status=StatusEnum.rjct,
+            ),
+            message=code.value,
         )

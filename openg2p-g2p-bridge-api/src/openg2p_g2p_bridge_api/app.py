@@ -17,11 +17,15 @@ from .controllers import (
     AccountStatementController,
     DisbursementController,
     DisbursementEnvelopeController,
+    DisbursementEnvelopeStatusController,
+    DisbursementStatusController,
 )
 from .services import (
     AccountStatementService,
     DisbursementEnvelopeService,
+    DisbursementEnvelopeStatusService,
     DisbursementService,
+    DisbursementStatusService,
 )
 
 _logger = logging.getLogger(_config.logging_default_logger_name)
@@ -33,9 +37,13 @@ class Initializer(BaseInitializer):
         DisbursementEnvelopeService()
         DisbursementService()
         AccountStatementService()
+        DisbursementStatusService()
+        DisbursementEnvelopeStatusService()
         DisbursementEnvelopeController().post_init()
         DisbursementController().post_init()
         AccountStatementController().post_init()
+        DisbursementStatusController().post_init()
+        DisbursementEnvelopeStatusController().post_init()
 
     def migrate_database(self, args):
         super().migrate_database(args)

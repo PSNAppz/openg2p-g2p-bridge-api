@@ -1,11 +1,10 @@
 import datetime
 from typing import List, Optional
 
+from openg2p_g2pconnect_common_lib.schemas import Request, SyncResponse
 from pydantic import BaseModel
 
 from ..models import CancellationStatus
-from .request import BridgeRequest
-from .response import BridgeResponse
 
 
 class DisbursementPayload(BaseModel):
@@ -22,9 +21,9 @@ class DisbursementPayload(BaseModel):
     response_error_codes: Optional[List[str]] = None
 
 
-class DisbursementRequest(BridgeRequest):
-    request_payload: List[DisbursementPayload]
+class DisbursementRequest(Request):
+    message: List[DisbursementPayload]
 
 
-class DisbursementResponse(BridgeResponse):
-    response_payload: Optional[List[DisbursementPayload]] = None
+class DisbursementResponse(SyncResponse):
+    message: Optional[List[DisbursementPayload]] = None

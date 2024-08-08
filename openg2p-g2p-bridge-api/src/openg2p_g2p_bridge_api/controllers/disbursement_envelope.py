@@ -25,13 +25,13 @@ class DisbursementEnvelopeController(BaseController):
         self.router.add_api_route(
             "/create_disbursement_envelope",
             self.create_disbursement_envelope,
-            responses={200: {"model": DisbursementEnvelopeRequest}},
+            responses={200: {"model": DisbursementEnvelopeResponse}},
             methods=["POST"],
         )
         self.router.add_api_route(
             "/cancel_disbursement_envelope",
             self.cancel_disbursement_envelope,
-            responses={200: {"model": DisbursementEnvelopeRequest}},
+            responses={200: {"model": DisbursementEnvelopeResponse}},
             methods=["POST"],
         )
 
@@ -48,12 +48,12 @@ class DisbursementEnvelopeController(BaseController):
         except DisbursementEnvelopeException as e:
             _logger.error("Error creating disbursement envelope")
             error_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_error_response(
-                e.code
+                disbursement_envelope_request, e.code
             )
             return error_response
 
         disbursement_envelope_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_success_response(
-            disbursement_envelope_payload
+            disbursement_envelope_request, disbursement_envelope_payload
         )
         _logger.info("Disbursement envelope created successfully")
         return disbursement_envelope_response
@@ -71,12 +71,12 @@ class DisbursementEnvelopeController(BaseController):
         except DisbursementEnvelopeException as e:
             _logger.error("Error cancelling disbursement envelope")
             error_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_error_response(
-                e.code
+                disbursement_envelope_request, e.code
             )
             return error_response
 
         disbursement_envelope_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_success_response(
-            disbursement_envelope_payload
+            disbursement_envelope_request, disbursement_envelope_payload
         )
         _logger.info("Disbursement envelope cancelled successfully")
         return disbursement_envelope_response

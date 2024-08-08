@@ -90,4 +90,5 @@ class DisbursementEnvelopeBatchStatus(BaseORMModelWithTimes):
     id_mapper_resolution_required: Mapped[bool] = mapped_column(Boolean, default=True)
 
     number_of_disbursements_shipped: Mapped[int] = mapped_column(Integer, default=0)
-    number_of_disbursements_failed: Mapped[int] = mapped_column(Integer, default=0)
+    number_of_disbursements_reconciled: Mapped[int] = mapped_column(Integer, default=0)
+    number_of_disbursements_reversed: Mapped[int] = mapped_column(Integer, default=0)
