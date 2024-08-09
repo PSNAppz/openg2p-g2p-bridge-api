@@ -27,7 +27,7 @@ jobs:
       - name: Generate openapi json
         run: |
           mkdir -p openg2p-g2p-bridge-api/api-docs/generated
-          python3 main.py getOpenAPI api-docs/generated/openapi.json
+          python3 openg2p-g2p-bridge-api/main.py getOpenAPI openg2p-g2p-bridge-api/api-docs/generated/openapi.json
           if ! [ -z "$(git status --porcelain=v1 2>/dev/null -- openg2p-g2p-bridge-api/api-docs/generated/openapi.json)" ]; then
             shopt -s nocasematch
             if [[ ${{ github.repository_owner }} == 'OpenG2P' ]]; then
