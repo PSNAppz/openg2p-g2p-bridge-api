@@ -40,7 +40,8 @@ jobs:
       - name: Install test requirements
         run: |
           python -m pip install -r test-requirements.txt
-          python -m pip install -e .
+          python -m pip install -e openg2p-g2p-bridge-api
+#          TODO: add other packages here
       - name: Run test suite
         run: |
           pytest --cov-branch --cov-report=term-missing --cov=openg2p_g2p_bridge_api --cov=tests

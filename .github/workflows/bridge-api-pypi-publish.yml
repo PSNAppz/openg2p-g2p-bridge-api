@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Bridge API PyPI Publish
 
 on:
   workflow_dispatch

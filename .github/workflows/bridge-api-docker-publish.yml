@@ -1,4 +1,4 @@
-name: Build Docker and Push
+name: Bridge API Docker Publish
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID >> $GITHUB_ENV
           echo VERSION=$VERSION >> $GITHUB_ENV
 
-          docker build . \
+          docker build openg2p-g2p-bridge-api \
             --file Dockerfile \
             --tag $IMAGE_ID:$VERSION
           if [[ '${{ secrets.docker_hub_token }}' != '' && '${{ secrets.docker_hub_actor }}' != '' ]]; then
