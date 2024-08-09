@@ -1,4 +1,4 @@
-name: openapi publish on push
+name: Bridge API OpenAPI Publish
 
 on:
   push:

@@ -21,7 +21,13 @@ ADD --chown=${container_user}:${container_user_group} main.py /app
 
 RUN python3 -m venv venv \
   && . ./venv/bin/activate
-RUN python3 -m pip install ./src
+RUN python3 -m pip install  \
+    git+https://github.com/openg2p/openg2p-fastapi-common@1.1.0\#subdirectory=openg2p-fastapi-common \
+    git+https://github.com/openg2p/openg2p-fastapi-common@1.1.0\#subdirectory=openg2p-fastapi-auth \
+    git+https://github.com/openg2p/openg2p-g2pconnect-common@1.0.0\#subdirectory=openg2p-g2pconnect-common-lib \
+    git+https://github.com/openg2p/openg2p-g2p-bridge@1.0.0\#subdirectory=openg2p-g2p-bridge-models \
+    openg2p-g2p-bridge-api/
 
 CMD python3 main.py migrate; \
-  python3 main.py run
+    gunicorn "openg2p-g2p-bridge-api.main:app" --workers ${SPAR_MAPPER_NO_OF_WORKERS} --worker-class uvicorn.workers.UvicornWorker --bind ${SPAR_MAPPER_HOST}:${SPAR_MAPPER_PORT}
+
