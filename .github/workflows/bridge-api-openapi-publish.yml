@@ -50,4 +50,4 @@ jobs:
       - name: Publish to stoplight
         if: env.OPENAPI_CHANGED == 'true'
         run: |
-          npx @stoplight/cli@5 push --ci-token ${{ secrets.STOPLIGHT_PROJECT_TOKEN }} --url https://openg2p.stoplight.io --branch ${{ env.BRANCH_NAME }} --directory ../openg2p-g2p-bridge-api/api-docs/generated
+          npx @stoplight/cli@5 push --ci-token ${{ secrets.STOPLIGHT_PROJECT_TOKEN }} --url https://openg2p.stoplight.io --branch ${{ env.BRANCH_NAME }} --directory openg2p-g2p-bridge-api/api-docs/generated
