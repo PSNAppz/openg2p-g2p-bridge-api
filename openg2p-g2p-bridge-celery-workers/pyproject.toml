@@ -19,7 +19,8 @@ dependencies = [
   "openg2p-fastapi-common",
   "openg2p-fastapi-auth",
   "openg2p-g2pconnect-mapper-lib",
-  "celery"
+  "celery",
+  "mt-940"
 ]
 dynamic = ["version"]
 
