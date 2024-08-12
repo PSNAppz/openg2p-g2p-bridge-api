@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NAMESPACE: ${{ secrets.docker_hub_organisation || 'openg2p' }}
-      SERVICE_NAME: openg2p-g2p-bridge-api
+      SERVICE_NAME: openg2p-g2p-bridge-celery-beat-producers
     steps:
       - uses: actions/checkout@v3
       - name: Docker build
