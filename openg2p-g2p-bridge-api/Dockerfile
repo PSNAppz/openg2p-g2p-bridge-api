@@ -31,4 +31,4 @@ RUN python3 -m pip install  \
 USER ${container_user}
 
 CMD python3 main.py migrate; \
-    gunicorn "main:app" --workers ${SPAR_MAPPER_NO_OF_WORKERS} --worker-class uvicorn.workers.UvicornWorker --bind ${SPAR_MAPPER_HOST}:${SPAR_MAPPER_PORT}
+    gunicorn "main:app" --workers ${G2P_BRIDGE_NO_OF_WORKERS} --worker-class uvicorn.workers.UvicornWorker --bind ${G2P_BRIDGE_HOST}:${G2P_BRIDGE_PORT}
