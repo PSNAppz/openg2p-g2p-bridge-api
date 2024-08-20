@@ -1,4 +1,4 @@
-FROM bitnami/python:3.10.13-debian-11-r24
+FROM bitnami/python:3.12.5-debian-12-r0
 
 ARG container_user=openg2p
 ARG container_user_group=openg2p
@@ -14,7 +14,6 @@ RUN install_packages libpq-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 RUN chown -R ${container_user}:${container_user_group} /app
-USER ${container_user}
 
 ADD --chown=${container_user}:${container_user_group} . /app/src
 ADD --chown=${container_user}:${container_user_group} main.py /app
@@ -29,5 +28,6 @@ RUN python3 -m pip install  \
     git+https://github.com/openg2p/openg2p-g2p-bridge@1.0.0\#subdirectory=openg2p-g2p-bridge-bank-connectors \
     ./src
 
-CMD python3 main.py migrate; \
-    celery -A main.celery_app worker --loglevel=info --beat
+USER ${container_user}
+
+CMD celery -A main.celery_app worker --beat --loglevel=info
