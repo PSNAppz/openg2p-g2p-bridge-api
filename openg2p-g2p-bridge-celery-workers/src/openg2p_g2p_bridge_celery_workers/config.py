@@ -6,11 +6,11 @@ from . import __version__
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="g2p_bridge_celery_tasks_", env_file=".env", extra="allow"
+        env_prefix="g2p_bridge_celery_workers_", env_file=".env", extra="allow"
     )
-    openapi_title: str = "OpenG2P G2P Bridge Celery Tasks"
+    openapi_title: str = "OpenG2P G2P Bridge Celery Workers"
     openapi_description: str = """
-        Celery tasks for OpenG2P G2P Bridge API
+        Celery workers for OpenG2P G2P Bridge API
         ***********************************
         Further details goes here
         ***********************************
@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     db_dbname: str = "openg2p_g2p_bridge_db"
     db_driver: str = "postgresql"
+
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_backend_url: str = "redis://localhost:6379/0"
 
     mapper_resolve_api_url: str = ""
 
