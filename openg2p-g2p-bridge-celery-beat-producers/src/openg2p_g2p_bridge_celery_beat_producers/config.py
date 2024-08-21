@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     db_dbname: str = "openg2p_g2p_bridge_db"
     db_driver: str = "postgresql"
 
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_backend_url: str = "redis://localhost:6379/0"
+
     mapper_resolve_attempts: int = 3
     funds_available_check_attempts: int = 3
     funds_blocked_attempts: int = 3
