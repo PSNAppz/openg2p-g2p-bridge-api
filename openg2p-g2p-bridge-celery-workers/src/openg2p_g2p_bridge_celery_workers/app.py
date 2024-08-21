@@ -32,6 +32,7 @@ def get_engine():
         db_engine = create_engine(_config.db_datasource)
         return db_engine
 
+
 celery_app = Celery(
     "g2p_bridge_celery_worker",
     broker=_config.celery_broker_url,
