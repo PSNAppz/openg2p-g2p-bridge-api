@@ -49,7 +49,7 @@ class DisbursementStatusService(BaseService):
                         disbursement_id=disbursement_id,
                         disbursement_recon_records=disbursement_recon_records,
                     )
-                disbursement_status_payloads.append(disbursement_status_payload)
+                    disbursement_status_payloads.append(disbursement_status_payload)
                 return disbursement_status_payloads
             except DisbursementStatusException as e:
                 _logger.error("Error in getting disbursement status")
