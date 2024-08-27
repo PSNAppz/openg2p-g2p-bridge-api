@@ -39,7 +39,7 @@ class DisbursementEnvelopeStatusController(BaseController):
             disbursement_envelope_batch_status_payload: DisbursementEnvelopeBatchStatusPayload = await self.disbursement_envelope_status_service.get_disbursement_envelope_batch_status(
                 disbursement_envelope_status_request
             )
-            disbursement_status_response: DisbursementEnvelopeStatusResponse = await self.disbursement_envelope_status_service.construct_disbursement_envelope_success_response(
+            disbursement_status_response: DisbursementEnvelopeStatusResponse = await self.disbursement_envelope_status_service.construct_disbursement_envelope_status_success_response(
                 disbursement_envelope_status_request,
                 disbursement_envelope_batch_status_payload,
             )
