@@ -212,12 +212,11 @@ async def test_cancel_disbursement_envelope_success(mock_service_get_component):
             total_count=1,
             is_msg_encrypted=False,
         ),
-        message=DisbursementEnvelopePayload(disbursement_envelope_id="env123")
+        message=DisbursementEnvelopePayload(disbursement_envelope_id="env123"),
     )
 
     actual_response = await controller.cancel_disbursement_envelope(request_payload)
     assert actual_response == expected_response
-
 
 
 @pytest.mark.asyncio
@@ -241,7 +240,7 @@ async def test_cancel_disbursement_envelope_failure(
     mock_service_get_component.return_value = mock_service_instance
 
     error_response = DisbursementEnvelopeResponse(
-        header = SyncResponseHeader(
+        header=SyncResponseHeader(
             message_id="",
             message_ts=datetime.now().isoformat(),
             action="",
