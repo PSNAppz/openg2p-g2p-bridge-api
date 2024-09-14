@@ -148,6 +148,7 @@ class DisbursementService(BaseService):
                 disbursement_envelope_id=str(
                     disbursement_payload.disbursement_envelope_id
                 ),
+                mis_reference_number=disbursement_payload.mis_reference_number,
                 beneficiary_id=disbursement_payload.beneficiary_id,
                 beneficiary_name=disbursement_payload.beneficiary_name,
                 disbursement_amount=disbursement_payload.disbursement_amount,

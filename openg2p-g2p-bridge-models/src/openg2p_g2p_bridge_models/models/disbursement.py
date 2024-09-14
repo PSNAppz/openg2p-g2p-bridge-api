@@ -25,6 +25,9 @@ class Disbursement(BaseORMModelWithTimes):
     disbursement_id: Mapped[str] = mapped_column(
         String, unique=True
     )  # TODO: Add unique constraint with composite key
+    mis_reference_number: Mapped[str] = mapped_column(
+        String, nullable=True, default=None
+    )
     disbursement_envelope_id: Mapped[str] = mapped_column(String, index=True)
     beneficiary_id: Mapped[str] = mapped_column(String)
     beneficiary_name: Mapped[str] = mapped_column(String)

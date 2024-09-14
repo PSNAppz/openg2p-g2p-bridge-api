@@ -9,6 +9,7 @@ from ..models import CancellationStatus
 
 class DisbursementPayload(BaseModel):
     id: Optional[str] = None
+    mis_reference_number: Optional[str] = None
     disbursement_id: Optional[str] = None
     disbursement_envelope_id: Optional[str] = None
     beneficiary_id: Optional[str] = None
