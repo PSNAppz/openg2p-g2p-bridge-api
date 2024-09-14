@@ -1321,6 +1321,17 @@
             ],
             "title": "Id"
           },
+          "mis_reference_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mis Reference Number"
+          },
           "disbursement_id": {
             "anyOf": [
               {
