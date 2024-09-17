@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 from openg2p_g2p_bridge_models.models import (
     BankDisbursementBatchStatus,
