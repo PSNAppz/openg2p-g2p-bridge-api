@@ -1,10 +1,16 @@
-name: Bridge Bank Connectors PyPI Publish
+name: Bridge Bank Connectors Tag Workflow
 
 on:
-  workflow_dispatch
+  push:
+    tags:
+      - "*"
+    branches-ignore:
+      - '*'
+  workflow_dispatch:
 
 jobs:
   publish-to-pypi:
+    name: Publish to PyPI For Bank Connectors Tag
     runs-on: ubuntu-latest
     steps:
     - name: Set up Python
@@ -15,8 +21,9 @@ jobs:
     - name: Install build dependencies
       run: pip install build
     - name: Build distribution
-      run: python -m build -s openg2p-g2p-bridge-bank-models/
+      run: python -m build ./openg2p-g2p-bridge-bank-connectors
     - name: Publish
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
+        packages-dir: ./openg2p-g2p-bridge-bank-connectors/dist/

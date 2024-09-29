@@ -1,16 +1,15 @@
-name: Bridge API Docker Publish
+name: Bridge API Branch Workflow
 
 on:
-  workflow_run:
-    workflows: [ "Bridge API PyPI Publish" ]
-    types:
-      - completed
-  workflow_dispatch:
+  push:
+    branches-ignore:
+      - develop
+    tags-ignore:
+      - '*'
 
 jobs:
-  docker-build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    name: Docker Build and Push
+  docker-build-for-branch:
+    name: Docker Build and Push For API Branch
     runs-on: ubuntu-latest
     env:
       NAMESPACE: ${{ secrets.docker_hub_organisation || 'openg2p' }}
@@ -26,15 +25,12 @@ jobs:
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$BRANCH_NAME
-          if [[ $BRANCH_NAME == master || $BRANCH_NAME == main ]]; then
-            VERSION=develop
-          fi
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
           echo IMAGE_ID=$IMAGE_ID >> $GITHUB_ENV
           echo VERSION=$VERSION >> $GITHUB_ENV
 
-          docker build ./openg2p-g2p-bridge-api \
+          docker build ./openg2p-g2p-bridge-api -f ./openg2p-g2p-bridge-api/Dockerfile-git \
             --tag $IMAGE_ID:$VERSION
           if [[ '${{ secrets.docker_hub_token }}' != '' && '${{ secrets.docker_hub_actor }}' != '' ]]; then
             export DOCKER_PUSH="true"
