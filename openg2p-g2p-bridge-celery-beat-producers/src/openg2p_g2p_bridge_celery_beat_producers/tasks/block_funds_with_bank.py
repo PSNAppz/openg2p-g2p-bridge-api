@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from openg2p_g2p_bridge_models.models import (
     CancellationStatus,
@@ -28,8 +29,9 @@ def block_funds_with_bank_beat_producer():
             session.execute(
                 select(DisbursementEnvelope)
                 .filter(
-                    # DisbursementEnvelope.disbursement_schedule_date
-                    # <= datetime.utcnow(), # TODO: Commented only for Demo
+                    # Only pick up on the scheduled date
+                    DisbursementEnvelope.disbursement_schedule_date
+                    == datetime.now().date(),
                     DisbursementEnvelope.cancellation_status
                     == CancellationStatus.Not_Cancelled.value,
                 )
