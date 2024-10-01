@@ -51,11 +51,16 @@ class DisbursementEnvelopeService(BaseService):
                 )
             )
 
-            disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = (
-                await self.construct_disbursement_envelope_batch_status(
-                    disbursement_envelope, session
+            try:
+                disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = (
+                    await self.construct_disbursement_envelope_batch_status(
+                        disbursement_envelope, session
+                    )
                 )
-            )
+            except Exception as e:
+                _logger.error("Error creating disbursement envelope")
+                await session.rollback()
+                raise e
 
             session.add(disbursement_envelope)
             session.add(disbursement_envelope_batch_status)
@@ -273,6 +278,14 @@ class DisbursementEnvelopeService(BaseService):
             .scalars()
             .first()
         )
+        if benefit_program_configuration is None:
+            _logger.error(
+                f"Benefit program configuration with mnemonic {disbursement_envelope.benefit_program_mnemonic} not found"
+            )
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_PROGRAM_MNEMONIC
+            )
+
         disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = DisbursementEnvelopeBatchStatus(
             disbursement_envelope_id=disbursement_envelope.disbursement_envelope_id,
             number_of_disbursements_received=0,
