@@ -197,7 +197,10 @@ class DisbursementService(BaseService):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_DISBURSEMENT_AMOUNT
                 )
-            if disbursement_payload.beneficiary_id is None:
+            if (
+                disbursement_payload.beneficiary_id is None
+                or disbursement_payload.beneficiary_id == ""
+            ):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_BENEFICIARY_ID
                 )
