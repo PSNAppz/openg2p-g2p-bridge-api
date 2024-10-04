@@ -115,7 +115,9 @@ def process_and_store_resolution(
         update_processed = []
         update_error = []
         for single_response in resolve_response.message.resolve_response:
-            _logger.info(f"Processing the response for beneficiary: {single_response.id}")
+            _logger.info(
+                f"Processing the response for beneficiary: {single_response.id}"
+            )
             disbursement_id = beneficiary_disbursement_map.get(single_response.id)
             if disbursement_id and (
                 single_response.fa != "" or single_response.fa is not None
