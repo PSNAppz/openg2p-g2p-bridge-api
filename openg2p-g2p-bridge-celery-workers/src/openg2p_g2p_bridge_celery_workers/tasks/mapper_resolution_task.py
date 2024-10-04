@@ -199,4 +199,5 @@ def process_and_store_resolution(
                 synchronize_session=False,
             )
         _logger.info("Stored the resolution")
+        session.flush()
         session.commit()
