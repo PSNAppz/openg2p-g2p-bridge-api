@@ -177,7 +177,7 @@ def process_and_store_resolution(
             ).update(
                 {
                     MapperResolutionBatchStatus.resolution_status: ProcessStatus.PENDING,
-                    MapperResolutionBatchStatus.latest_error_code: f"Failed to resolve the request for beneficiary: {single_response.id}",
+                    MapperResolutionBatchStatus.latest_error_code: "Failed to resolve the request for a beneficiary id",
                     MapperResolutionBatchStatus.resolution_attempts: MapperResolutionBatchStatus.resolution_attempts
                     + 1,
                 }
