@@ -57,6 +57,10 @@ class DisbursementBatchControl(BaseORMModelWithTimes):
     mapper_resolution_batch_id = mapped_column(
         UUID, nullable=True, default=None, index=True
     )
+    mapper_status: Mapped[ProcessStatus] = mapped_column(
+        SqlEnum(ProcessStatus), default=ProcessStatus.PENDING
+    )
+    latest_error_code: Mapped[str] = mapped_column(String, nullable=True, default=None)
 
 
 class MapperResolutionBatchStatus(BaseORMModelWithTimes):
