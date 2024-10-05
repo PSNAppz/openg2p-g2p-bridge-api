@@ -85,7 +85,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                 DisbursementBatchControl.bank_disbursement_batch_id
                 == bank_disbursement_batch_id,
                 DisbursementBatchControl.mapper_status.in_(
-                    [ProcessStatus.PENDING.value, ProcessStatus.ERROR.value]
+                    [ProcessStatus.PROCESSED.value]
                 ),
             )
             .all()
