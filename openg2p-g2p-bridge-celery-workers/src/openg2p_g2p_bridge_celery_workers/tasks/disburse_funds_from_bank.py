@@ -83,7 +83,10 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
             session.query(DisbursementBatchControl)
             .filter(
                 DisbursementBatchControl.bank_disbursement_batch_id
-                == bank_disbursement_batch_id
+                == bank_disbursement_batch_id,
+                DisbursementBatchControl.mapper_status.in_(
+                    [ProcessStatus.PROCESSED.value]
+                ),
             )
             .all()
         )
