@@ -119,9 +119,7 @@ def process_and_store_resolution(
                 f"Processing the response for beneficiary: {single_response.id}"
             )
             disbursement_id = beneficiary_disbursement_map.get(single_response.id)
-            if disbursement_id and (
-                single_response.fa != "" or single_response.fa is not None
-            ):
+            if disbursement_id and single_response.fa:
                 _logger.info(
                     f"Resolved the request for beneficiary: {single_response.id}"
                 )
