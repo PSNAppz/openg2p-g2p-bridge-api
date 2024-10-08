@@ -36,7 +36,8 @@ def mapper_resolution_beat_producer():
         )
         for mapper_resolution_batch_status in mapper_resolution_batch_statuses:
             _logger.info(
-                f"{mapper_resolution_batch_status.resolution_attempts} / {_config.mapper_resolve_attempts} attempts done")
+                f"{mapper_resolution_batch_status.resolution_attempts} / {_config.mapper_resolve_attempts} attempts done"
+            )
 
             _logger.info(
                 f"Sending mapper_resolution_worker task for mapper_resolution_batch_id: {mapper_resolution_batch_status.mapper_resolution_batch_id}"
