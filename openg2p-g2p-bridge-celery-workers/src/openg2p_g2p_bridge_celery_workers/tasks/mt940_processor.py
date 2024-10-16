@@ -452,6 +452,9 @@ def get_disbursement_envelope_id(disbursement_id, session):
         .first()
     )
 
+    if not disbursement:
+        return None
+
     return disbursement.disbursement_envelope_id
 
 
