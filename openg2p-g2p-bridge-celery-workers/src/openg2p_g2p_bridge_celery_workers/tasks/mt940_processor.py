@@ -318,7 +318,7 @@ def get_bank_batch_id(parsed_transaction, session):
         .first()
     )
     if not bank_disbursement_batch_id:
-        return None
+        bank_disbursement_batch_id.bank_disbursement_batch_id = None
     return bank_disbursement_batch_id.bank_disbursement_batch_id
 
 
@@ -454,7 +454,7 @@ def get_disbursement_envelope_id(disbursement_id, session):
     )
 
     if not disbursement:
-        return None
+        disbursement.disbursement_envelope_id = None
 
     return disbursement.disbursement_envelope_id
 
