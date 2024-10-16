@@ -316,9 +316,10 @@ def get_bank_batch_id(parsed_transaction, session):
             == parsed_transaction["disbursement_id"]
         )
         .first()
-        .bank_disbursement_batch_id
     )
-    return bank_disbursement_batch_id
+    if not bank_disbursement_batch_id:
+        return None
+    return bank_disbursement_batch_id.bank_disbursement_batch_id
 
 
 def construct_disbursement_error_recon(
