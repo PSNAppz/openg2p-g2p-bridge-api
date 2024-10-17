@@ -91,7 +91,7 @@ class DisbursementEnvelopeStatusService(BaseService):
                 status=StatusEnum.rjct,
                 status_reason_message=code,
             ),
-            message={},
+            message=None,
         )
 
         return response
