@@ -139,7 +139,7 @@ class DisbursementStatusService(BaseService):
         disbursement_status_request: DisbursementStatusRequest,
         code: str,
     ) -> DisbursementStatusResponse:
-        response = DisbursementEnvelopeStatusResponse(
+        response = DisbursementStatusResponse(
             header=SyncResponseHeader(
                 message_id=disbursement_status_request.header.message_id,
                 message_ts=datetime.now().isoformat(),
