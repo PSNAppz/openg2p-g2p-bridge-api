@@ -303,3 +303,151 @@ class DisbursementEnvelopeService(BaseService):
         )
         _logger.info("Disbursement envelope batch status constructed successfully")
         return disbursement_envelope_batch_status
+
+    async def validate_envelope_amend_request(
+        self, disbursement_envelope_request: DisbursementEnvelopeRequest
+    ) -> bool:
+        _logger.info("Validating disbursement envelope amend request")
+        disbursement_envelope_payload: DisbursementEnvelopePayload = (
+            disbursement_envelope_request.message
+        )
+        if (
+            disbursement_envelope_payload.disbursement_envelope_id is None
+            or disbursement_envelope_payload.disbursement_envelope_id == ""
+        ):
+            _logger.error("Invalid disbursement envelope ID")
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_DISBURSEMENT_ENVELOPE_ID
+            )
+        if (
+            disbursement_envelope_payload.number_of_beneficiaries is None
+            or disbursement_envelope_payload.number_of_beneficiaries < 1
+        ):
+            _logger.error("Invalid number of beneficiaries")
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_NO_OF_BENEFICIARIES
+            )
+        if (
+            disbursement_envelope_payload.number_of_disbursements is None
+            or disbursement_envelope_payload.number_of_disbursements < 1
+        ):
+            _logger.error("Invalid number of disbursements")
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_NO_OF_DISBURSEMENTS
+            )
+        if (
+            disbursement_envelope_payload.total_disbursement_amount is None
+            or disbursement_envelope_payload.total_disbursement_amount < 0
+        ):
+            _logger.error("Invalid total disbursement amount")
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_TOTAL_DISBURSEMENT_AMOUNT
+            )
+        if (
+            disbursement_envelope_payload.disbursement_schedule_date is None
+            or disbursement_envelope_payload.disbursement_schedule_date
+            < datetime.date(datetime.utcnow())
+        ):
+            _logger.error("Invalid disbursement schedule date")
+            raise DisbursementEnvelopeException(
+                G2PBridgeErrorCodes.INVALID_DISBURSEMENT_SCHEDULE_DATE
+            )
+        return True
+
+    async def update_disbursement_envelope(
+        self, disbursement_envelope_payload: DisbursementEnvelopePayload, session
+    ) -> DisbursementEnvelopePayload:
+        _logger.info("Updating disbursement envelope")
+        disbursement_envelope: DisbursementEnvelope = (
+            await session.execute(
+                select(DisbursementEnvelope).where(
+                    DisbursementEnvelope.id == disbursement_envelope_payload.id
+                )
+            )
+        ).scalar()
+
+        disbursement_envelope.number_of_beneficiaries = (
+            disbursement_envelope_payload.number_of_beneficiaries
+        )
+        disbursement_envelope.number_of_disbursements = (
+            disbursement_envelope_payload.number_of_disbursements
+        )
+        disbursement_envelope.total_disbursement_amount = (
+            disbursement_envelope_payload.total_disbursement_amount
+        )
+        disbursement_envelope.disbursement_schedule_date = (
+            disbursement_envelope_payload.disbursement_schedule_date
+        )
+
+        await session.commit()
+        _logger.info("Disbursement envelope updated successfully")
+        return disbursement_envelope_payload
+
+    async def amend_disbursement_envelope(
+        self, disbursement_envelope_request: DisbursementEnvelopeRequest
+    ) -> DisbursementEnvelopePayload:
+        _logger.info("Amending disbursement envelope")
+        session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
+        async with session_maker() as session:
+            try:
+                await self.validate_envelope_amend_request(disbursement_envelope_request)
+            except DisbursementEnvelopeException as e:
+                raise e
+
+            disbursement_envelope_payload: DisbursementEnvelopePayload = (
+                disbursement_envelope_request.message
+            )
+            disbursement_envelope_id: str = (
+                disbursement_envelope_payload.disbursement_envelope_id
+            )
+
+            disbursement_envelope: DisbursementEnvelope = (
+                await session.execute(
+                    select(DisbursementEnvelope).where(
+                        DisbursementEnvelope.disbursement_envelope_id
+                        == disbursement_envelope_id
+                    )
+                )
+            ).scalar()
+
+            if disbursement_envelope is None:
+                _logger.error(
+                    f"Disbursement envelope with ID {disbursement_envelope_id} not found"
+                )
+                raise DisbursementEnvelopeException(
+                    G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_NOT_FOUND
+                )
+
+            if (
+                disbursement_envelope.cancellation_status
+                == CancellationStatus.Cancelled.value
+            ):
+                _logger.error(
+                    f"Disbursement envelope with ID {disbursement_envelope_id} already cancelled"
+                )
+                raise DisbursementEnvelopeException(
+                    G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED
+                )
+
+            if (
+                disbursement_envelope.disbursement_schedule_date
+                <= datetime.date(datetime.utcnow())
+            ):
+                _logger.error(
+                    f"Disbursement envelope with ID {disbursement_envelope_id} date is already passed"
+                )
+                raise DisbursementEnvelopeException(
+                    G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_DATE_PASSED
+                )
+
+
+            disbursement_envelope_payload.disbursement_envelope_id = disbursement_envelope_id
+            disbursement_envelope_payload.id = disbursement_envelope.id
+
+            disbursement_envelope_payload = await self.update_disbursement_envelope(
+                disbursement_envelope_payload, session
+            )
+
+            await session.commit()
+            _logger.info("Disbursement envelope amended successfully")
+            return disbursement_envelope_payload

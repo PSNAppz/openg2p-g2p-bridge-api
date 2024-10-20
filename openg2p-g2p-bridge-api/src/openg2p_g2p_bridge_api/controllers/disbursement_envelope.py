@@ -34,6 +34,12 @@ class DisbursementEnvelopeController(BaseController):
             responses={200: {"model": DisbursementEnvelopeResponse}},
             methods=["POST"],
         )
+        self.router.add_api_route(
+            "/amend_disbursement_envelope",
+            self.amend_disbursement_envelope,
+            responses={200: {"model": DisbursementEnvelopeResponse}},
+            methods=["POST"],
+        )
 
     async def create_disbursement_envelope(
         self, disbursement_envelope_request: DisbursementEnvelopeRequest
@@ -79,4 +85,27 @@ class DisbursementEnvelopeController(BaseController):
             disbursement_envelope_request, disbursement_envelope_payload
         )
         _logger.info("Disbursement envelope cancelled successfully")
+        return disbursement_envelope_response
+
+    async def amend_disbursement_envelope(
+        self, disbursement_envelope_request: DisbursementEnvelopeRequest
+    ) -> DisbursementEnvelopeResponse:
+        _logger.info("Amending disbursement envelope")
+        try:
+            disbursement_envelope_payload: DisbursementEnvelopePayload = (
+                await self.disbursement_envelope_service.amend_disbursement_envelope(
+                    disbursement_envelope_request
+                )
+            )
+        except DisbursementEnvelopeException as e:
+            _logger.error("Error amending disbursement envelope")
+            error_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_error_response(
+                disbursement_envelope_request, e.code
+            )
+            return error_response
+
+        disbursement_envelope_response: DisbursementEnvelopeResponse = await self.disbursement_envelope_service.construct_disbursement_envelope_success_response(
+            disbursement_envelope_request, disbursement_envelope_payload
+        )
+        _logger.info("Disbursement envelope amended successfully")
         return disbursement_envelope_response
