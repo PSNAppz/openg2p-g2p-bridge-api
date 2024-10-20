@@ -390,7 +390,9 @@ class DisbursementEnvelopeService(BaseService):
         session_maker = async_sessionmaker(dbengine.get(), expire_on_commit=False)
         async with session_maker() as session:
             try:
-                await self.validate_envelope_amend_request(disbursement_envelope_request)
+                await self.validate_envelope_amend_request(
+                    disbursement_envelope_request
+                )
             except DisbursementEnvelopeException as e:
                 raise e
 
@@ -429,9 +431,8 @@ class DisbursementEnvelopeService(BaseService):
                     G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_ALREADY_CANCELED
                 )
 
-            if (
-                disbursement_envelope.disbursement_schedule_date
-                <= datetime.date(datetime.utcnow())
+            if disbursement_envelope.disbursement_schedule_date <= datetime.date(
+                datetime.utcnow()
             ):
                 _logger.error(
                     f"Disbursement envelope with ID {disbursement_envelope_id} date is already passed"
@@ -440,8 +441,9 @@ class DisbursementEnvelopeService(BaseService):
                     G2PBridgeErrorCodes.DISBURSEMENT_ENVELOPE_DATE_PASSED
                 )
 
-
-            disbursement_envelope_payload.disbursement_envelope_id = disbursement_envelope_id
+            disbursement_envelope_payload.disbursement_envelope_id = (
+                disbursement_envelope_id
+            )
             disbursement_envelope_payload.id = disbursement_envelope.id
 
             disbursement_envelope_payload = await self.update_disbursement_envelope(

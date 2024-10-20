@@ -10,7 +10,6 @@ from openg2p_g2p_bridge_models.models import (
     DisbursementRecon,
 )
 from openg2p_g2p_bridge_models.schemas import (
-    DisbursementEnvelopeStatusResponse,
     DisbursementErrorReconPayload,
     DisbursementReconPayload,
     DisbursementReconRecords,
