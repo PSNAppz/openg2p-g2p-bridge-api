@@ -1,9 +1,9 @@
-from pyexpat.errors import messages
+
+from datetime import datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, patch
-from datetime import datetime
-
+from openg2p_g2p_bridge_api.controllers import DisbursementStatusController
 from openg2p_g2p_bridge_models.errors.codes import G2PBridgeErrorCodes
 from openg2p_g2p_bridge_models.errors.exceptions import DisbursementStatusException
 from openg2p_g2p_bridge_models.schemas import (
@@ -11,8 +11,12 @@ from openg2p_g2p_bridge_models.schemas import (
     DisbursementStatusRequest,
     DisbursementStatusResponse,
 )
-from openg2p_g2pconnect_common_lib.schemas import RequestHeader, StatusEnum, SyncResponseHeader
-from openg2p_g2p_bridge_api.controllers import DisbursementStatusController
+from openg2p_g2pconnect_common_lib.schemas import (
+    RequestHeader,
+    StatusEnum,
+    SyncResponseHeader,
+)
+
 
 @pytest.mark.asyncio
 @patch("openg2p_g2p_bridge_api.services.DisbursementStatusService.get_component")
@@ -80,8 +84,9 @@ async def test_get_disbursement_status_failure(mock_service_get_component, error
     mock_service_get_component.return_value = mock_service_instance
 
     # Mock the method to raise an error
-    mock_service_instance.get_disbursement_status_payloads.side_effect = DisbursementStatusException(
-        code=error_code.value, message=error_code.value)
+    mock_service_instance.get_disbursement_status_payloads.side_effect = (
+        DisbursementStatusException(code=error_code.value, message=error_code.value)
+    )
 
     error_response = DisbursementStatusResponse(
         header=SyncResponseHeader(
@@ -117,13 +122,20 @@ async def test_get_disbursement_status_failure(mock_service_get_component, error
     # Try to get disbursement status and catch any raised exception
     try:
         actual_response = await controller.get_disbursement_status(request_payload)
-    except DisbursementStatusException as e:
+    except DisbursementStatusException:
         # If an exception is raised, assert that it matches the expected mock response
-        actual_response = await mock_service_instance.construct_disbursement_status_error_response(request_payload)
+        actual_response = (
+            await mock_service_instance.construct_disbursement_status_error_response(
+                request_payload
+            )
+        )
 
     # Assert individual fields to handle mock object comparison issues
     assert actual_response.header.status == error_response.header.status
-    assert actual_response.header.status_reason_message == error_response.header.status_reason_message
+    assert (
+        actual_response.header.status_reason_message
+        == error_response.header.status_reason_message
+    )
     assert actual_response.message == error_response.message
 
     # Assert overall response equality
