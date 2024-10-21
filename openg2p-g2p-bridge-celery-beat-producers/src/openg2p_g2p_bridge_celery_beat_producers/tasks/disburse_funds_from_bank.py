@@ -9,7 +9,7 @@ from openg2p_g2p_bridge_models.models import (
     FundsBlockedWithBankEnum,
     ProcessStatus,
 )
-from sqlalchemy import and_, select
+from sqlalchemy import and_, literal, select
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
@@ -25,13 +25,18 @@ def disburse_funds_from_bank_beat_producer():
     _logger.info("Running disburse_funds_from_bank_beat_producer")
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
     with session_maker() as session:
+        # Check if the disbursement schedule date is today if the configuration is
+        # not set to process future disbursement schedules
+        date_condition = (
+            DisbursementEnvelope.disbursement_schedule_date == datetime.now().date()
+            if not _config.process_future_disbursement_schedules
+            else literal(True)
+        )
         envelopes = (
             session.execute(
                 select(DisbursementEnvelope)
                 .filter(
-                    # Only pick up on the scheduled date
-                    DisbursementEnvelope.disbursement_schedule_date
-                    == datetime.now().date(),
+                    date_condition,
                     DisbursementEnvelope.cancellation_status
                     == CancellationStatus.Not_Cancelled.value,
                 )
