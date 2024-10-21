@@ -9,7 +9,7 @@ from openg2p_g2p_bridge_models.models import (
     FundsBlockedWithBankEnum,
     ProcessStatus,
 )
-from sqlalchemy import and_, select, literal
+from sqlalchemy import and_, literal, select
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
@@ -36,7 +36,7 @@ def disburse_funds_from_bank_beat_producer():
             session.execute(
                 select(DisbursementEnvelope)
                 .filter(
-                   date_condition,
+                    date_condition,
                     DisbursementEnvelope.cancellation_status
                     == CancellationStatus.Not_Cancelled.value,
                 )

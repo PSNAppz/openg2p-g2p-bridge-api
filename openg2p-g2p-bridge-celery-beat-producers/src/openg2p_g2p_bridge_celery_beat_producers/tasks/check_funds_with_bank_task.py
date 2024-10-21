@@ -7,7 +7,7 @@ from openg2p_g2p_bridge_models.models import (
     DisbursementEnvelopeBatchStatus,
     FundsAvailableWithBankEnum,
 )
-from sqlalchemy import and_, or_, select, literal
+from sqlalchemy import and_, literal, or_, select
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
