@@ -3,5 +3,6 @@ from .bank_connector_interface import (
     BlockFundsResponse,
     CheckFundsResponse,
     DisbursementPaymentPayload,
+    PaymentResponse,
     PaymentStatus,
 )
