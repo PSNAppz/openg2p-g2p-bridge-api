@@ -205,7 +205,8 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     )
                     break
 
-                except OperationalError:
+                except Exception as e:
+                    _logger.info(f"PSN$$$ - Error: {str(e)}")
                     _logger.warning(
                         f"PSN$$$ - Attempt {retry_count + 1} failed to acquire lock. Retrying..."
                     )
