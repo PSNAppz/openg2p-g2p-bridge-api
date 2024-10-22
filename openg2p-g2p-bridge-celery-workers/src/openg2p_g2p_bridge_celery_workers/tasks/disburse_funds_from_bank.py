@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from datetime import datetime
 
 from openg2p_g2p_bridge_bank_connectors.bank_connectors import BankConnectorFactory
@@ -19,7 +19,6 @@ from openg2p_g2p_bridge_models.models import (
     MapperResolutionDetails,
     ProcessStatus,
 )
-from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -181,8 +180,6 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     _logger.info(
                         f"PSN$$$ - Attempting to acquire lock for disbursement envelope: {disbursement_envelope_id}"
                     )
-                    # # Set lock timeout, if applicable
-                    # session.execute(text("SET lock_timeout = '5s'"))
 
                     # Attempt to acquire the lock and execute the query
                     envelope_batch_status = (
@@ -191,7 +188,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                             DisbursementEnvelopeBatchStatus.disbursement_envelope_id
                             == disbursement_envelope_id
                         )
-                        .with_for_update()
+                        .with_for_update(nowait=True)
                         .first()
                     )
                     _logger.info(
