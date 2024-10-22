@@ -191,9 +191,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                         .first()
                     )
                     # Process if lock acquired
-                    payment_response = bank_connector.initiate_payment(
-                        payment_payloads
-                    )
+                    payment_response = bank_connector.initiate_payment(payment_payloads)
                     break
 
                 except OperationalError:
