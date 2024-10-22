@@ -189,6 +189,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                             == disbursement_envelope_id
                         )
                         .with_for_update(nowait=True)
+                        .populate_existing()
                         .first()
                     )
                     _logger.info(
