@@ -181,8 +181,8 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     _logger.info(
                         f"PSN$$$ - Attempting to acquire lock for disbursement envelope: {disbursement_envelope_id}"
                     )
-                    # Set lock timeout, if applicable
-                    session.execute(text("SET lock_timeout = '5s'"))
+                    # # Set lock timeout, if applicable
+                    # session.execute(text("SET lock_timeout = '5s'"))
 
                     # Attempt to acquire the lock and execute the query
                     envelope_batch_status = (
