@@ -171,7 +171,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         )
 
         try:
-            max_retries = 3
+            max_retries = 5
             retry_count = 0
             payment_response: PaymentResponse = None
 
@@ -194,7 +194,6 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     _logger.info(
                         f"PSN$$$ - Lock acquired for disbursement envelope: {disbursement_envelope_id}"
                     )
-                    time.sleep(600)
                     _logger.info(
                         f"PSN$$$ - Disbursement envelope status: {envelope_batch_status.number_of_disbursements_shipped}"
                     )
@@ -207,6 +206,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
 
                 except Exception as e:
                     _logger.info(f"PSN$$$ - Error: {str(e)}")
+                    time.sleep(2)
                     _logger.warning(
                         f"PSN$$$ - Attempt {retry_count + 1} failed to acquire lock. Retrying..."
                     )
