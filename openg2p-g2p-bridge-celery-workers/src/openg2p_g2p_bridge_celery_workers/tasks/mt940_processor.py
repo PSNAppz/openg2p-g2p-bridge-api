@@ -525,23 +525,14 @@ def update_envelope_batch_status_reversed(
         _logger.info(
             f"Disbursement envelope id: {disbursement_envelope_id}, count: {count}"
         )
-        max_retries = 5
-        retry_count = 0
-        disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = None
-        while retry_count < max_retries:
-            try:
-                disbursement_envelope_batch_status = (
-                    session.query(DisbursementEnvelopeBatchStatus)
-                    .filter(
-                        DisbursementEnvelopeBatchStatus.disbursement_envelope_id
-                        == disbursement_envelope_id
-                    )
-                    .with_for_update(nowait=True)
-                    .populate_existing()
-                    .first()
-                )
-            except Exception:
-                time.sleep(2)
-                retry_count += 1
+        disbursement_envelope_batch_status = (
+            session.query(DisbursementEnvelopeBatchStatus)
+            .filter(
+                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                == disbursement_envelope_id
+            )
+            .populate_existing()
+            .first()
+        )
         disbursement_envelope_batch_status.number_of_disbursements_reversed += count
         session.add(disbursement_envelope_batch_status)
