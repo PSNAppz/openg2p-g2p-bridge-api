@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 
@@ -177,6 +178,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
 
             while retry_count < max_retries:
                 try:
+                    _logger.info(
+                        f"PSN$$$ - Attempting to acquire lock for disbursement envelope: {disbursement_envelope_id}"
+                    )
                     # Set lock timeout, if applicable
                     session.execute(text("SET lock_timeout = '5s'"))
 
@@ -190,20 +194,35 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                         .with_for_update()
                         .first()
                     )
+                    _logger.info(
+                        f"PSN$$$ - Lock acquired for disbursement envelope: {disbursement_envelope_id}"
+                    )
+                    asyncio.sleep(600)
+                    _logger.info(
+                        f"PSN$$$ - Disbursement envelope status: {envelope_batch_status.number_of_disbursements_shipped}"
+                    )
                     # Process if lock acquired
                     payment_response = bank_connector.initiate_payment(payment_payloads)
+                    _logger.info(
+                        f"PSN$$$ - Payment response received for disbursement envelope: {payment_response.status}"
+                    )
                     break
 
                 except OperationalError:
                     _logger.warning(
-                        f"Attempt {retry_count + 1} failed to acquire lock. Retrying..."
+                        f"PSN$$$ - Attempt {retry_count + 1} failed to acquire lock. Retrying..."
                     )
                     retry_count += 1
 
             if retry_count == max_retries:
-                _logger.error(f"Unable to acquire lock after {max_retries} attempts")
+                _logger.error(
+                    f"PSN$$$ - Unable to acquire lock after {max_retries} attempts"
+                )
 
             else:
+                _logger.info(
+                    f"PSN$$$ - Payment response received for disbursement envelope: {payment_response.status}"
+                )
                 if payment_response.status == PaymentStatus.SUCCESS:
                     disbursement_batch_status.disbursement_status = (
                         ProcessStatus.PROCESSED.value
@@ -211,6 +230,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     disbursement_batch_status.latest_error_code = None
                     envelope_batch_status.number_of_disbursements_shipped += len(
                         payment_payloads
+                    )
+                    _logger.info(
+                        f"PSN$$$ - number_of_disbursements_shipped after update: {envelope_batch_status.number_of_disbursements_shipped}"
                     )
                 else:
                     disbursement_batch_status.disbursement_status = (
