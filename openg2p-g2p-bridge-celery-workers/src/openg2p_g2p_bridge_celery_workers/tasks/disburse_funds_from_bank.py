@@ -253,4 +253,5 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         _logger.info(
             f"Disbursing funds with bank for batch: {bank_disbursement_batch_id} completed"
         )
+        time.sleep(2)
         session.commit()
