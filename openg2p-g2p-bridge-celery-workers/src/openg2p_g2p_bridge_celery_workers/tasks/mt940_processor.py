@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 from typing import List
 
@@ -479,14 +480,24 @@ def update_envelope_batch_status_reconciled(
 
     # Update the disbursement envelope batch status
     for disbursement_envelope_id, count in disbursement_envelope_id_count.items():
-        disbursement_envelope_batch_status = (
-            session.query(DisbursementEnvelopeBatchStatus)
-            .filter(
-                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
-                == disbursement_envelope_id
-            )
-            .first()
-        )
+        max_retries = 5
+        retry_count = 0
+        disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = None
+        while retry_count < max_retries:
+            try:
+                disbursement_envelope_batch_status = (
+                    session.query(DisbursementEnvelopeBatchStatus)
+                    .filter(
+                        DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                        == disbursement_envelope_id
+                    )
+                    .with_for_update(nowait=True)
+                    .populate_existing()
+                    .first()
+                )
+            except Exception:
+                time.sleep(2)
+                retry_count += 1
         disbursement_envelope_batch_status.number_of_disbursements_reconciled += count
         session.add(disbursement_envelope_batch_status)
 
@@ -514,13 +525,23 @@ def update_envelope_batch_status_reversed(
         _logger.info(
             f"Disbursement envelope id: {disbursement_envelope_id}, count: {count}"
         )
-        disbursement_envelope_batch_status = (
-            session.query(DisbursementEnvelopeBatchStatus)
-            .filter(
-                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
-                == disbursement_envelope_id
-            )
-            .first()
-        )
+        max_retries = 5
+        retry_count = 0
+        disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = None
+        while retry_count < max_retries:
+            try:
+                disbursement_envelope_batch_status = (
+                    session.query(DisbursementEnvelopeBatchStatus)
+                    .filter(
+                        DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                        == disbursement_envelope_id
+                    )
+                    .with_for_update(nowait=True)
+                    .populate_existing()
+                    .first()
+                )
+            except Exception:
+                time.sleep(2)
+                retry_count += 1
         disbursement_envelope_batch_status.number_of_disbursements_reversed += count
         session.add(disbursement_envelope_batch_status)
