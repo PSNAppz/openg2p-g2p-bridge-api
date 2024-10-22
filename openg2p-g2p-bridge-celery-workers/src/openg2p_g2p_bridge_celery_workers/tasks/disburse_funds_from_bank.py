@@ -1,4 +1,4 @@
-import asyncio
+import time
 import logging
 from datetime import datetime
 
@@ -197,7 +197,7 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                     _logger.info(
                         f"PSN$$$ - Lock acquired for disbursement envelope: {disbursement_envelope_id}"
                     )
-                    asyncio.sleep(600)
+                    time.sleep(600)
                     _logger.info(
                         f"PSN$$$ - Disbursement envelope status: {envelope_batch_status.number_of_disbursements_shipped}"
                     )
