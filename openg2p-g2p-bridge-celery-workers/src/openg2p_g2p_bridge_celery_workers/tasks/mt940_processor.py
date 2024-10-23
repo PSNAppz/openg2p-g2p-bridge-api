@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 from typing import List
 
@@ -479,16 +480,37 @@ def update_envelope_batch_status_reconciled(
 
     # Update the disbursement envelope batch status
     for disbursement_envelope_id, count in disbursement_envelope_id_count.items():
-        disbursement_envelope_batch_status = (
-            session.query(DisbursementEnvelopeBatchStatus)
-            .filter(
-                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
-                == disbursement_envelope_id
-            )
-            .first()
-        )
-        disbursement_envelope_batch_status.number_of_disbursements_reconciled += count
-        session.add(disbursement_envelope_batch_status)
+        max_retries = 5
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                disbursement_envelope_batch_status = (
+                    session.query(DisbursementEnvelopeBatchStatus)
+                    .filter(
+                        DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                        == disbursement_envelope_id
+                    )
+                    .with_for_update(nowait=True)
+                    .populate_existing()
+                    .first()
+                )
+                disbursement_envelope_batch_status.number_of_disbursements_reconciled += (
+                    count
+                )
+                session.add(disbursement_envelope_batch_status)
+                # Flush changes to release the lock without committing the transaction
+                session.flush()
+                # Break out of retry loop once successful
+                _logger.info(
+                    f"Successfully updated number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
+                )
+                break
+            except Exception:
+                _logger.info(
+                    f"Error updating number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
+                )
+                time.sleep(2)
+                retry_count += 1
 
 
 def update_envelope_batch_status_reversed(
@@ -520,6 +542,7 @@ def update_envelope_batch_status_reversed(
                 DisbursementEnvelopeBatchStatus.disbursement_envelope_id
                 == disbursement_envelope_id
             )
+            .populate_existing()
             .first()
         )
         disbursement_envelope_batch_status.number_of_disbursements_reversed += count

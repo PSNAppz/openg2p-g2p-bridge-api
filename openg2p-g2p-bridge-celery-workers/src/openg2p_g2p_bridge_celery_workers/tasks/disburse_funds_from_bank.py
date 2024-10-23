@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 
 from openg2p_g2p_bridge_bank_connectors.bank_connectors import BankConnectorFactory
@@ -18,8 +19,6 @@ from openg2p_g2p_bridge_models.models import (
     MapperResolutionDetails,
     ProcessStatus,
 )
-from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 from ..app import celery_app, get_engine
@@ -171,33 +170,40 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
         )
 
         try:
-            max_retries = 3
+            max_retries = 5
             retry_count = 0
             payment_response: PaymentResponse = None
 
             while retry_count < max_retries:
                 try:
-                    with session_maker() as session:
-                        # Set lock timeout, if applicable
-                        session.execute(text("SET lock_timeout = '5s'"))
+                    _logger.info(
+                        f"Attempting to acquire lock for disbursement envelope: {disbursement_envelope_id}"
+                    )
 
-                        # Attempt to acquire the lock and execute the query
-                        envelope_batch_status = (
-                            session.query(DisbursementEnvelopeBatchStatus)
-                            .filter(
-                                DisbursementEnvelopeBatchStatus.disbursement_envelope_id
-                                == disbursement_envelope_id
-                            )
-                            .with_for_update()
-                            .first()
+                    # Attempt to acquire the lock and execute the query
+                    envelope_batch_status = (
+                        session.query(DisbursementEnvelopeBatchStatus)
+                        .filter(
+                            DisbursementEnvelopeBatchStatus.disbursement_envelope_id
+                            == disbursement_envelope_id
                         )
-                        # Process if lock acquired
-                        payment_response = bank_connector.initiate_payment(
-                            payment_payloads
-                        )
-                        break
+                        .with_for_update(nowait=True)
+                        .populate_existing()
+                        .first()
+                    )
+                    _logger.info(
+                        f"Lock acquired for disbursement envelope: {disbursement_envelope_id}"
+                    )
+                    # Process if lock acquired
+                    payment_response = bank_connector.initiate_payment(payment_payloads)
+                    _logger.info(
+                        f"Payment response received for disbursement envelope: {payment_response.status}"
+                    )
+                    break
 
-                except OperationalError:
+                except Exception as e:
+                    _logger.info(f"Error: {str(e)}")
+                    time.sleep(2)
                     _logger.warning(
                         f"Attempt {retry_count + 1} failed to acquire lock. Retrying..."
                     )
@@ -207,6 +213,9 @@ def disburse_funds_from_bank_worker(bank_disbursement_batch_id: str):
                 _logger.error(f"Unable to acquire lock after {max_retries} attempts")
 
             else:
+                _logger.info(
+                    f"Payment response received for disbursement envelope: {payment_response.status}"
+                )
                 if payment_response.status == PaymentStatus.SUCCESS:
                     disbursement_batch_status.disbursement_status = (
                         ProcessStatus.PROCESSED.value
