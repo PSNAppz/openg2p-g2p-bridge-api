@@ -505,7 +505,7 @@ def update_envelope_batch_status_reconciled(
                     f"Successfully updated number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
                 )
                 break
-            except Exception as e:
+            except Exception:
                 _logger.info(
                     f"Error updating number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
                 )
