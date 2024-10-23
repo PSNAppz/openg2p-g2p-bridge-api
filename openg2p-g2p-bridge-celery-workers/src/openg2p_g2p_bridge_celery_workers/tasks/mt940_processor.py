@@ -482,7 +482,6 @@ def update_envelope_batch_status_reconciled(
     for disbursement_envelope_id, count in disbursement_envelope_id_count.items():
         max_retries = 5
         retry_count = 0
-        disbursement_envelope_batch_status: DisbursementEnvelopeBatchStatus = None
         while retry_count < max_retries:
             try:
                 disbursement_envelope_batch_status = (
@@ -495,7 +494,9 @@ def update_envelope_batch_status_reconciled(
                     .populate_existing()
                     .first()
                 )
-                disbursement_envelope_batch_status.number_of_disbursements_reconciled += count
+                disbursement_envelope_batch_status.number_of_disbursements_reconciled += (
+                    count
+                )
                 session.add(disbursement_envelope_batch_status)
                 # Flush changes to release the lock without committing the transaction
                 session.flush()
@@ -504,11 +505,12 @@ def update_envelope_batch_status_reconciled(
                     f"Successfully updated number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
                 )
                 break
-            except Exception:
+            except Exception as e:
+                _logger.info(
+                    f"Error updating number_of_disbursements_reconciled for envelope id: {disbursement_envelope_id}"
+                )
                 time.sleep(2)
                 retry_count += 1
-
-
 
 
 def update_envelope_batch_status_reversed(
