@@ -2,6 +2,9 @@ import enum
 
 
 class G2PBridgeErrorCodes(enum.Enum):
+    # Request Validation Errors
+    REQUEST_VALIDATION_ERROR = "REQUEST_VALIDATION_ERROR"
+
     # Disbursement Envelope Errors
     INVALID_PROGRAM_MNEMONIC = "INVALID_PROGRAM_MNEMONIC"
     INVALID_DISBURSEMENT_FREQUENCY = "INVALID_DISBURSEMENT_FREQUENCY"

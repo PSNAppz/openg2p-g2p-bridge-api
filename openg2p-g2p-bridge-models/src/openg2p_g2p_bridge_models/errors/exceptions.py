@@ -4,6 +4,13 @@ from ..schemas import DisbursementPayload
 from .codes import G2PBridgeErrorCodes
 
 
+class RequestValidationException(Exception):
+    def __init__(self, code: G2PBridgeErrorCodes, message: Optional[str] = None):
+        self.code: G2PBridgeErrorCodes = code
+        self.message: Optional[str] = message
+        super().__init__(self.message)
+
+
 class DisbursementEnvelopeException(Exception):
     def __init__(self, code: G2PBridgeErrorCodes, message: Optional[str] = None):
         self.code: G2PBridgeErrorCodes = code
