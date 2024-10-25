@@ -28,3 +28,7 @@ class Settings(BaseSettings):
     bank_fa_deconstruct_strategy: str = ""
     mobile_wallet_deconstruct_strategy: str = ""
     email_wallet_deconstruct_strategy: str = ""
+
+    private_key: str = ""
+    issuer: str = ""
+    audience: str = ""

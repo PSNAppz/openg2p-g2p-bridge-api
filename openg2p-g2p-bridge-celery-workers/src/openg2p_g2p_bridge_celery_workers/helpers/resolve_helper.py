@@ -2,9 +2,10 @@ import enum
 import logging
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
+import jwt
 from openg2p_fastapi_common.service import BaseService
 from openg2p_g2p_bridge_models.models import MapperResolvedFaType
 from openg2p_g2pconnect_common_lib.schemas import RequestHeader
@@ -77,6 +78,21 @@ class ResolveHelper(BaseService):
             f"Constructed resolve request for {len(single_resolve_requests)} single resolve requests"
         )
         return resolve_request
+
+    async def create_jwt_token(self, payload, expiration_minutes=60):
+        private_key = _config.private_key
+        headers = {"alg": "RS256", "typ": "JWT"}
+        issuer = _config.issuer
+        audience = _config.audience
+        payload.update(
+            {
+                "iss": issuer,
+                "aud": audience,
+                "exp": datetime.utcnow() + timedelta(minutes=expiration_minutes),
+            }
+        )
+        token = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
+        return token
 
     def _deconstruct(self, value: str, strategy: str) -> List[KeyValuePair]:
         _logger.info(f"Deconstructing ID/FA: {value}")

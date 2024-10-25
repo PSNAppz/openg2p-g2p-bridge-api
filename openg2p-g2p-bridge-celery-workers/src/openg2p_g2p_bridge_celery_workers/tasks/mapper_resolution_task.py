@@ -89,10 +89,13 @@ async def make_resolve_request(disbursement_batch_controls):
     resolve_request: ResolveRequest = resolve_helper.construct_resolve_request(
         single_resolve_requests
     )
+    jwt_token = await resolve_helper.create_jwt_token(resolve_request.dict())
+    headers = {"content-type": "application/json", "Authorization": jwt_token}
+
     resolve_client = MapperResolveClient()
     try:
         resolve_response = await resolve_client.resolve_request(
-            resolve_request, _config.mapper_resolve_api_url
+            resolve_request, headers, _config.mapper_resolve_api_url
         )
         return resolve_response, None
     except Exception as e:
