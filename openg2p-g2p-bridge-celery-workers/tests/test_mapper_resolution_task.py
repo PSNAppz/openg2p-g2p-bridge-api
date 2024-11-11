@@ -45,18 +45,6 @@ class MockSession:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    # def execute(self, *args):
-    #     class ScalarResult:
-    #         def __init__(self, controls):
-    #             self.disbursement_batch_controls = controls
-
-    #         def scalars(self):
-    #             return self
-
-    #         def all(self):
-    #             return self.disbursement_batch_controls
-
-    #     return ScalarResult(self.disbursement_batch_controls)
     def execute(self, *args):
         return self
 
