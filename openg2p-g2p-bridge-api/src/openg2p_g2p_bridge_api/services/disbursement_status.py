@@ -10,7 +10,6 @@ from openg2p_g2p_bridge_models.models import (
     DisbursementRecon,
 )
 from openg2p_g2p_bridge_models.schemas import (
-    DisbursementEnvelopeStatusResponse,
     DisbursementErrorReconPayload,
     DisbursementReconPayload,
     DisbursementReconRecords,
@@ -139,7 +138,7 @@ class DisbursementStatusService(BaseService):
         disbursement_status_request: DisbursementStatusRequest,
         code: str,
     ) -> DisbursementStatusResponse:
-        response = DisbursementEnvelopeStatusResponse(
+        response = DisbursementStatusResponse(
             header=SyncResponseHeader(
                 message_id=disbursement_status_request.header.message_id,
                 message_ts=datetime.now().isoformat(),

@@ -197,7 +197,10 @@ class DisbursementService(BaseService):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_DISBURSEMENT_AMOUNT
                 )
-            if disbursement_payload.beneficiary_id is None:
+            if (
+                disbursement_payload.beneficiary_id is None
+                or disbursement_payload.beneficiary_id == ""
+            ):
                 disbursement_payload.response_error_codes.append(
                     G2PBridgeErrorCodes.INVALID_BENEFICIARY_ID
                 )
@@ -561,17 +564,17 @@ class DisbursementService(BaseService):
         )
 
         no_of_disbursements_after_this_request = (
-            len(disbursement_payloads)
-            - disbursement_envelope_batch_status.number_of_disbursements_received
+            disbursement_envelope_batch_status.number_of_disbursements_received
+            - len(disbursement_payloads)
         )
         total_disbursement_amount_after_this_request = (
-            sum(
+            disbursement_envelope_batch_status.total_disbursement_amount_received
+            - sum(
                 [
                     disbursement.disbursement_amount
                     for disbursement in disbursements_in_db
                 ]
             )
-            - disbursement_envelope_batch_status.total_disbursement_amount_received
         )
 
         if no_of_disbursements_after_this_request < 0:

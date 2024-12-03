@@ -34,3 +34,5 @@ class Settings(BaseSettings):
     funds_blocked_frequency: int = 3600
     funds_disbursement_frequency: int = 3600
     mt940_processor_frequency: int = 3600
+
+    process_future_disbursement_schedules: bool = False

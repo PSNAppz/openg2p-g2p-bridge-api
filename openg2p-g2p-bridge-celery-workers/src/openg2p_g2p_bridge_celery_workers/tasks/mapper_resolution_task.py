@@ -32,7 +32,10 @@ def mapper_resolution_worker(mapper_resolution_batch_id: str):
             session.execute(
                 select(DisbursementBatchControl).filter(
                     DisbursementBatchControl.mapper_resolution_batch_id
-                    == mapper_resolution_batch_id
+                    == mapper_resolution_batch_id,
+                    DisbursementBatchControl.mapper_status.in_(
+                        [ProcessStatus.PENDING.value, ProcessStatus.ERROR.value]
+                    ),
                 )
             )
             .scalars()
@@ -69,7 +72,9 @@ def mapper_resolution_worker(mapper_resolution_batch_id: str):
             return
 
         process_and_store_resolution(
-            mapper_resolution_batch_id, resolve_response, beneficiary_disbursement_map
+            mapper_resolution_batch_id,
+            resolve_response,
+            beneficiary_disbursement_map,
         )
 
 
@@ -97,18 +102,27 @@ async def make_resolve_request(disbursement_batch_controls):
 
 
 def process_and_store_resolution(
-    mapper_resolution_batch_id, resolve_response, beneficiary_disbursement_map
+    mapper_resolution_batch_id,
+    resolve_response,
+    beneficiary_disbursement_map,
 ):
     _logger.info("Processing and storing resolution")
     resolve_helper = ResolveHelper.get_component()
     session_maker = sessionmaker(bind=_engine, expire_on_commit=False)
     with session_maker() as session:
         details_list = []
+        batch_has_error = False
+        update_processed = []
+        update_error = []
         for single_response in resolve_response.message.resolve_response:
+            _logger.info(
+                f"Processing the response for beneficiary: {single_response.id}"
+            )
             disbursement_id = beneficiary_disbursement_map.get(single_response.id)
-            if disbursement_id and (
-                single_response.fa != "" or single_response.fa is not None
-            ):
+            if disbursement_id and single_response.fa:
+                _logger.info(
+                    f"Resolved the request for beneficiary: {single_response.id}"
+                )
                 deconstructed_fa = resolve_helper.deconstruct_fa(single_response.fa)
                 details = MapperResolutionDetails(
                     mapper_resolution_batch_id=mapper_resolution_batch_id,
@@ -130,37 +144,61 @@ def process_and_store_resolution(
                     email_wallet_provider=deconstructed_fa.get("email_wallet_provider"),
                     active=True,
                 )
+                # Update corresponding disbursement control to processed
+                update_processed.append(disbursement_id)
                 details_list.append(details)
             else:
                 _logger.error(
                     f"Failed to resolve the request for beneficiary: {single_response.id}"
                 )
-                session.query(MapperResolutionBatchStatus).filter(
-                    MapperResolutionBatchStatus.mapper_resolution_batch_id
-                    == mapper_resolution_batch_id
-                ).update(
-                    {
-                        MapperResolutionBatchStatus.resolution_status: ProcessStatus.PENDING,
-                        MapperResolutionBatchStatus.latest_error_code: f"Failed to resolve the request for beneficiary: {single_response.id}",
-                        MapperResolutionBatchStatus.resolution_attempts: MapperResolutionBatchStatus.resolution_attempts
-                        + 1,
-                    }
-                )
-                session.commit()
-                return
+                # Update corresponding disbursement control to failed
+                update_error.append(disbursement_id)
+                batch_has_error = True
 
         session.add_all(details_list)
-        session.query(MapperResolutionBatchStatus).filter(
-            MapperResolutionBatchStatus.mapper_resolution_batch_id
-            == mapper_resolution_batch_id
-        ).update(
-            {
-                MapperResolutionBatchStatus.resolution_status: ProcessStatus.PROCESSED,
-                MapperResolutionBatchStatus.resolution_time_stamp: datetime.utcnow(),
-                MapperResolutionBatchStatus.latest_error_code: None,
-                MapperResolutionBatchStatus.resolution_attempts: MapperResolutionBatchStatus.resolution_attempts
-                + 1,
-            }
-        )
+        if not batch_has_error:
+            _logger.info("Batch has no error")
+            session.query(MapperResolutionBatchStatus).filter(
+                MapperResolutionBatchStatus.mapper_resolution_batch_id
+                == mapper_resolution_batch_id
+            ).update(
+                {
+                    MapperResolutionBatchStatus.resolution_status: ProcessStatus.PROCESSED,
+                    MapperResolutionBatchStatus.resolution_time_stamp: datetime.utcnow(),
+                    MapperResolutionBatchStatus.latest_error_code: None,
+                    MapperResolutionBatchStatus.resolution_attempts: MapperResolutionBatchStatus.resolution_attempts
+                    + 1,
+                }
+            )
+        else:
+            _logger.info("Batch has error")
+            session.query(MapperResolutionBatchStatus).filter(
+                MapperResolutionBatchStatus.mapper_resolution_batch_id
+                == mapper_resolution_batch_id
+            ).update(
+                {
+                    MapperResolutionBatchStatus.resolution_status: ProcessStatus.PENDING,
+                    MapperResolutionBatchStatus.latest_error_code: "Failed to resolve the request for a beneficiary id",
+                    MapperResolutionBatchStatus.resolution_attempts: MapperResolutionBatchStatus.resolution_attempts
+                    + 1,
+                }
+            )
+        if update_processed:
+            _logger.info("Updating the disbursement control to processed")
+            session.query(DisbursementBatchControl).filter(
+                DisbursementBatchControl.disbursement_id.in_(update_processed)
+            ).update(
+                {DisbursementBatchControl.mapper_status: ProcessStatus.PROCESSED.value},
+                synchronize_session=False,
+            )
+        if update_error:
+            _logger.info("Updating the disbursement control to error")
+            session.query(DisbursementBatchControl).filter(
+                DisbursementBatchControl.disbursement_id.in_(update_error)
+            ).update(
+                {DisbursementBatchControl.mapper_status: ProcessStatus.ERROR.value},
+                synchronize_session=False,
+            )
         _logger.info("Stored the resolution")
+        session.flush()
         session.commit()
