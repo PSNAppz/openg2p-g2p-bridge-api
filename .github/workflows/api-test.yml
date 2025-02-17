@@ -40,7 +40,10 @@ jobs:
       - name: Install test requirements
         run: |
           python -m pip install -r test-requirements.txt
+          python -m pip install -e openg2p-g2p-bridge-models
           python -m pip install -e openg2p-g2p-bridge-api
+          python -m pip install -e openg2p-g2p-bridge-bank-connectors
+          python -m pip install -e openg2p-g2p-bridge-celery-workers
 #          TODO: add other packages here
       - name: Run test suite
         run: |
