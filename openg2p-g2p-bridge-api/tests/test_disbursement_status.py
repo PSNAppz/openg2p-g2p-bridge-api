@@ -19,7 +19,13 @@ from openg2p_g2pconnect_common_lib.schemas import (
 
 @pytest.mark.asyncio
 @patch("openg2p_g2p_bridge_api.services.DisbursementStatusService.get_component")
-async def test_get_disbursement_status_success(mock_service_get_component):
+@patch("openg2p_g2p_bridge_api.services.RequestValidation.get_component")
+async def test_get_disbursement_status_success(
+    mock_request_validation, mock_service_get_component
+):
+    mock_request_validation.validate_signature.return_value = None
+    mock_request_validation.validate_request.return_value = None
+
     # Setup mock service
     mock_service_instance = AsyncMock()
     mock_service_get_component.return_value = mock_service_instance
@@ -70,14 +76,22 @@ async def test_get_disbursement_status_success(mock_service_get_component):
         message=["disb123"],
     )
 
-    actual_response = await controller.get_disbursement_status(request_payload)
+    actual_response = await controller.get_disbursement_status(
+        request_payload, is_signature_valid=True
+    )
     assert actual_response == expected_response
 
 
 @pytest.mark.asyncio
 @patch("openg2p_g2p_bridge_api.services.DisbursementStatusService.get_component")
+@patch("openg2p_g2p_bridge_api.services.RequestValidation.get_component")
 @pytest.mark.parametrize("error_code", list(G2PBridgeErrorCodes))
-async def test_get_disbursement_status_failure(mock_service_get_component, error_code):
+async def test_get_disbursement_status_failure(
+    mock_request_validation, mock_service_get_component, error_code
+):
+    mock_request_validation.validate_signature.return_value = None
+    mock_request_validation.validate_request.return_value = None
+
     # Setup mock service
     mock_service_instance = AsyncMock()
     mock_service_get_component.return_value = mock_service_instance
@@ -120,7 +134,9 @@ async def test_get_disbursement_status_failure(mock_service_get_component, error
 
     # Try to get disbursement status and catch any raised exception
     try:
-        actual_response = await controller.get_disbursement_status(request_payload)
+        actual_response = await controller.get_disbursement_status(
+            request_payload, is_signature_valid=True
+        )
     except DisbursementStatusException:
         # If an exception is raised, assert that it matches the expected mock response
         actual_response = (
