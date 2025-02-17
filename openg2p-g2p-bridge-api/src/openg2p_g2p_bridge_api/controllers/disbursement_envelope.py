@@ -105,7 +105,7 @@ class DisbursementEnvelopeController(BaseController):
             )
 
             disbursement_envelope_payload: DisbursementEnvelopePayload = (
-                await self.disbursement_envelope_service.create_disbursement_envelope(
+                await self.disbursement_envelope_service.cancel_disbursement_envelope(
                     disbursement_envelope_request
                 )
             )
