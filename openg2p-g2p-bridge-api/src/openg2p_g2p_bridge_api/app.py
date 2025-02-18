@@ -27,6 +27,7 @@ from .services import (
     DisbursementEnvelopeStatusService,
     DisbursementService,
     DisbursementStatusService,
+    RequestValidation,
 )
 
 _logger = logging.getLogger(_config.logging_default_logger_name)
@@ -36,6 +37,7 @@ class Initializer(BaseInitializer):
     def initialize(self, **kwargs):
         super().initialize()
         OAuthTokenService()
+        RequestValidation()
         DisbursementEnvelopeService()
         DisbursementService()
         AccountStatementService()
