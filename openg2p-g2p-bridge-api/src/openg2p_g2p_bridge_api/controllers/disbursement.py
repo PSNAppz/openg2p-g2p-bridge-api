@@ -50,8 +50,6 @@ class DisbursementController(BaseController):
         try:
             RequestValidation.get_component().validate_signature(is_signature_valid)
             RequestValidation.get_component().validate_request(disbursement_request)
-            # TODO: Create validation for request header
-            # RequestValidation.get_component().validate_create_disbursements_header(disbursement_request)
 
             disbursement_payloads: List[
                 DisbursementPayload
@@ -93,8 +91,6 @@ class DisbursementController(BaseController):
         try:
             RequestValidation.get_component().validate_signature(is_signature_valid)
             RequestValidation.get_component().validate_request(disbursement_request)
-            # TODO: Create validation for request header
-            # RequestValidation.get_component().validate_cancel_disbursements_header(disbursement_request)
 
             disbursement_payloads: List[
                 DisbursementPayload

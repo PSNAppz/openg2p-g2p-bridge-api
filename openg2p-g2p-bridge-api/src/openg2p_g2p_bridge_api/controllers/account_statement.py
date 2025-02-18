@@ -46,8 +46,6 @@ class AccountStatementController(BaseController):
         try:
             RequestValidation.get_component().validate_signature(is_signature_valid)
             RequestValidation.get_component().validate_request(statement_file)
-            # TODO: Add validation for upload_mt940_request_header
-            # RequestValidation.get_component().validate_upload_mt940_request_header(statement_file)
             account_statement_id: str = (
                 await self.account_statement_service.upload_mt940(statement_file)
             )

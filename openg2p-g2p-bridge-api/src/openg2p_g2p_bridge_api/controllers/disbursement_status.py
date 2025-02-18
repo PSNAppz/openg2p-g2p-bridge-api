@@ -47,9 +47,6 @@ class DisbursementStatusController(BaseController):
                 disbursement_status_request
             )
 
-            # TODO: Create validation for request header
-            # RequestValidation.get_component().validate_get_disbursement_status_request_header(disbursement_status_request)
-
             disbursement_status_payloads: List[
                 DisbursementStatusPayload
             ] = await self.disbursement_service.get_disbursement_status_payloads(

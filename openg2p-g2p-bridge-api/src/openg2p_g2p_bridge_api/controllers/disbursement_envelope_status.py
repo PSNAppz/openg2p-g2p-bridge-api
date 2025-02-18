@@ -48,9 +48,6 @@ class DisbursementEnvelopeStatusController(BaseController):
             RequestValidation.get_component().validate_request(
                 disbursement_envelope_status_request
             )
-            # TODO: Add validation for get_disbursement_envelope_status_request_header
-            # RequestValidation.get_component().validate_get_disbursement_envelope_status_request_header(disbursement_envelope_status_request)
-
             disbursement_envelope_batch_status_payload: DisbursementEnvelopeBatchStatusPayload = await self.disbursement_envelope_status_service.get_disbursement_envelope_batch_status(
                 disbursement_envelope_status_request
             )
